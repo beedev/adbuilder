@@ -367,9 +367,12 @@ async function main() {
 
   console.log('Seeding sample ad...')
 
-  // Create a sample ad
-  const sampleAd = await prisma.ad.create({
-    data: {
+  // Create a sample ad — fixed ID so seed-meijer-sample.ts can reference it
+  const sampleAd = await prisma.ad.upsert({
+    where: { id: 'dd217886-ffdc-41ad-9b0b-ac95dee77fb9' },
+    update: {},
+    create: {
+      id: 'dd217886-ffdc-41ad-9b0b-ac95dee77fb9',
       name: 'Week of Mar 3-9, 2026',
       regionIds: ['WEST_COAST', 'MIDWEST'],
       validFrom: new Date('2026-03-03'),
