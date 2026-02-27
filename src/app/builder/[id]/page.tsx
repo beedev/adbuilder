@@ -28,7 +28,7 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
   const { id } = use(params)
   const [blockData, setBlockData] = useState<BlockData[]>([])
   const [isSaving, setIsSaving] = useState(false)
-  const [dragOverlay, setDragOverlay] = useState<{ blockData: BD; w: number; h: number } | null>(null)
+  const [dragOverlay, setDragOverlay] = useState<{ blockData: BD; w: number; h: number; isStamp?: boolean; stampColor?: string } | null>(null)
 
   const { ad, setAd, setTemplates, markSaved, isDirty, placeBlock, moveBlock, markDirty } = useAdStore()
   const {
@@ -169,7 +169,8 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
       setDragOverlay({ blockData: bd, w: zone?.width || 200, h: zone?.height || 280 })
     }
     if (data.current?.type === 'component') {
-      const def = data.current.def as { label: string; color: string }
+      const def = data.current.def as { label: string; color: string; overlayMode?: string }
+      const isStamp = def.overlayMode === 'stamp_overlay'
       setDragOverlay({
         blockData: {
           id: 'preview',
@@ -180,8 +181,10 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
           adId: '',
           importedAt: '',
         } as unknown as BD,
-        w: 760,
-        h: 80,
+        w: isStamp ? 130 : 760,
+        h: isStamp ? 130 : 80,
+        isStamp,
+        stampColor: def.color,
       })
     }
     if (data.current?.type === 'placed') {
@@ -268,15 +271,26 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
     if (activeData?.type === 'component') {
       const def = activeData.def as { id: string; label: string; color: string; priceText: string; headline: string; overlayMode?: string; stampType?: string }
 
-      // ── Stamp overlay: small standalone badge, placed at canvas center ──
+      // ── Stamp overlay: small standalone badge ──────────────────────────
       if (def.overlayMode === 'stamp_overlay') {
         const pageLayout = page.template?.layoutJson as TemplateLayout | undefined
         const canvasW = pageLayout?.canvas?.width || 800
         const canvasH = pageLayout?.canvas?.height || 1100
         const w = 130
         const h = 130
-        const x = Math.round(canvasW / 2 - w / 2)
-        const y = Math.round(canvasH / 2 - h / 2)
+
+        // Calculate drop position from pointer location relative to canvas element
+        let x = Math.round(canvasW / 2 - w / 2)
+        let y = Math.round(canvasH / 2 - h / 2)
+        const droppedRect = active.rect.current.translated
+        const canvasEl = document.querySelector(`[data-canvas="${page.id}"]`)
+        if (droppedRect && canvasEl) {
+          const canvasRect = canvasEl.getBoundingClientRect()
+          const rawX = (droppedRect.left - canvasRect.left) / scale
+          const rawY = (droppedRect.top - canvasRect.top) / scale
+          x = Math.max(0, Math.min(canvasW - w, Math.round(rawX)))
+          y = Math.max(0, Math.min(canvasH - h, Math.round(rawY)))
+        }
 
         fetch(`/api/ads/${id}/blocks/create`, {
           method: 'POST',
@@ -286,7 +300,8 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
           .then(r => r.json())
           .then((newBlock: BD) => {
             setBlockData(prev => [...prev, newBlock])
-            const clientId = placeBlock(page.id, newBlock.id, null, x, y, w, h)
+            // Pass newBlock as blockData so BlockRenderer never sees undefined
+            const clientId = placeBlock(page.id, newBlock.id, null, x, y, w, h, newBlock)
             useAdStore.getState().updateBlockOverride(clientId, { displayMode: 'stamp_overlay', stamps: [def.stampType as StampType] })
             markDirty()
             fetch(`/api/ads/${id}/blocks`, {
@@ -642,23 +657,50 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
 
         <DragOverlay>
           {dragOverlay && (
-            <div
-              style={{
-                width: dragOverlay.w * effectiveScale,
-                height: dragOverlay.h * effectiveScale,
-                backgroundColor: '#e3f2fd',
-                border: '2px dashed #1565C0',
-                borderRadius: 6,
-                opacity: 0.8,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 12,
-                color: '#1565C0',
-              }}
-            >
-              {dragOverlay.blockData.feedJson.productName}
-            </div>
+            dragOverlay.isStamp ? (
+              <div
+                style={{
+                  width: dragOverlay.w * effectiveScale,
+                  height: dragOverlay.h * effectiveScale,
+                  borderRadius: '50%',
+                  backgroundColor: dragOverlay.stampColor || '#C8102E',
+                  opacity: 0.85,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
+                  border: '2.5px solid rgba(255,255,255,0.6)',
+                  fontSize: 11,
+                  fontWeight: 900,
+                  color: '#fff',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.03em',
+                  textAlign: 'center',
+                  lineHeight: 1.2,
+                  padding: 8,
+                }}
+              >
+                {dragOverlay.blockData.feedJson.productName}
+              </div>
+            ) : (
+              <div
+                style={{
+                  width: dragOverlay.w * effectiveScale,
+                  height: dragOverlay.h * effectiveScale,
+                  backgroundColor: '#e3f2fd',
+                  border: '2px dashed #1565C0',
+                  borderRadius: 6,
+                  opacity: 0.8,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 12,
+                  color: '#1565C0',
+                }}
+              >
+                {dragOverlay.blockData.feedJson.productName}
+              </div>
+            )
           )}
         </DragOverlay>
       </DndContext>
@@ -689,7 +731,7 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
               Preview — {currentPage.template?.name || 'Page'}
             </span>
             <button
-              onClick={togglePreview}
+              onClick={e => { e.stopPropagation(); togglePreview() }}
               style={{
                 color: '#fff',
                 background: 'none',

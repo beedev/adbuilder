@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { Ad, Section, Page, PlacedBlock, PlacedBlockOverrides, Template } from '@/types'
+import { Ad, BlockData, Section, Page, PlacedBlock, PlacedBlockOverrides, Template } from '@/types'
 
 interface Command {
   execute: () => void
@@ -21,7 +21,7 @@ interface AdStore {
   setTemplates: (templates: Template[]) => void
 
   // Ad mutations
-  placeBlock: (pageId: string, blockDataId: string, zoneId: string | null, x: number, y: number, width: number, height: number) => string
+  placeBlock: (pageId: string, blockDataId: string, zoneId: string | null, x: number, y: number, width: number, height: number, blockData?: BlockData | null) => string
   replacePlacedBlockId: (oldId: string, newId: string) => void
   moveBlock: (placedBlockId: string, targetPageId: string, x: number, y: number) => void
   removeBlock: (placedBlockId: string) => void
@@ -32,6 +32,7 @@ interface AdStore {
   reorderPage: (pageId: string, newPosition: number) => void
   addSection: (name: string, themeColor?: string) => Promise<void>
   addPage: (sectionId: string, templateId?: string) => Promise<void>
+  deletePage: (pageId: string) => Promise<void>
   swapTemplate: (pageId: string, templateId: string) => void
 
   // History
@@ -86,13 +87,13 @@ export const useAdStore = create<AdStore>((set, get) => ({
     set({ isDirty: false, lastSaved: new Date() })
   },
 
-  placeBlock(pageId, blockDataId, zoneId, x, y, width, height) {
+  placeBlock(pageId, blockDataId, zoneId, x, y, width, height, blockData) {
     const clientId = crypto.randomUUID()
     const newBlock: PlacedBlock = {
       id: clientId,
       pageId,
       blockDataId,
-      blockData: undefined, // will be resolved by the UI from blockTray
+      blockData: blockData ?? undefined, // optional pre-populated blockData prevents render race
       zoneId,
       x, y, width, height,
       zIndex: 1,
@@ -314,6 +315,28 @@ export const useAdStore = create<AdStore>((set, get) => ({
         )
       } : null
     }))
+  },
+
+  async deletePage(pageId) {
+    const { ad } = get()
+    if (!ad) return
+    // Find which section this page belongs to for fallback navigation
+    await fetch(`/api/ads/${ad.id}/pages/${pageId}`, { method: 'DELETE' })
+    set(state => {
+      if (!state.ad) return state
+      return {
+        ad: {
+          ...state.ad,
+          sections: state.ad.sections.map(section => ({
+            ...section,
+            pages: section.pages
+              .filter(p => p.id !== pageId)
+              .map((p, i) => ({ ...p, position: i })),
+          })),
+        },
+        isDirty: true,
+      }
+    })
   },
 
   swapTemplate(pageId, templateId) {

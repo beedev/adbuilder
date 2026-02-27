@@ -38,6 +38,9 @@ interface Props {
   position: StampPosition | StampCoords
   pct?: number
   size?: number
+  colorOverride?: string
+  shapeOverride?: 'circle' | 'square' | 'pill'
+  textOverride?: string
   onPointerDown?: (e: React.PointerEvent) => void
   onResizePointerDown?: (e: React.PointerEvent) => void
   showHandles?: boolean
@@ -48,6 +51,9 @@ export function StampBadge({
   position,
   pct,
   size = 52,
+  colorOverride,
+  shapeOverride,
+  textOverride,
   onPointerDown,
   onResizePointerDown,
   showHandles,
@@ -55,8 +61,14 @@ export function StampBadge({
   const config = STAMP_CONFIG[type]
   if (!config) return null
 
-  const text = type === 'PCT_OFF' && pct ? `${pct}%\nOFF` : config.text
+  const text = textOverride ?? (type === 'PCT_OFF' && pct ? `${pct}%\nOFF` : config.text)
   const lines = text.split('\n')
+
+  const borderRadius = shapeOverride
+    ? shapeOverride === 'circle' ? '50%'
+    : shapeOverride === 'pill' ? 999
+    : 8   // 'square'
+    : (config.shape === 'circle' || config.shape === 'burst' ? '50%' : 4)
 
   const coords: StampCoords =
     typeof position === 'string'
@@ -73,8 +85,8 @@ export function StampBadge({
         transform: 'translate(-50%, -50%)',
         width: size,
         height: size,
-        borderRadius: config.shape === 'circle' || config.shape === 'burst' ? '50%' : 4,
-        backgroundColor: config.bg,
+        borderRadius,
+        backgroundColor: colorOverride ?? config.bg,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -91,7 +103,7 @@ export function StampBadge({
           key={i}
           style={{
             color: '#fff',
-            fontSize: size > 48 ? 9 : 7,
+            fontSize: Math.max(6, Math.round(size * 0.17)),
             fontWeight: 900,
             textTransform: 'uppercase',
             lineHeight: 1.1,

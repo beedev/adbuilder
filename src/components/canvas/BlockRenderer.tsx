@@ -44,6 +44,32 @@ export function BlockRenderer({ placedBlock, scale, isSelected, onSelect, mode =
     document.addEventListener('pointerup', onUp)
   }, [mode, placedBlock.id])
 
+  // ── Resizable stamps ────────────────────────────────────────────────
+  const handleStampResizePointerDown = useCallback((stamp: StampType, startDesignSize: number) => (e: React.PointerEvent) => {
+    if (mode !== 'edit') return
+    e.stopPropagation()
+    e.preventDefault()
+
+    const startX = e.clientX
+    const startY = e.clientY
+
+    const onMove = (ev: PointerEvent) => {
+      // Diagonal delta in screen px → convert to design units via scale
+      const delta = ((ev.clientX - startX) + (ev.clientY - startY)) / 2 / scale
+      const newSize = Math.round(Math.max(20, Math.min(140, startDesignSize + delta)))
+      const store = useAdStore.getState()
+      const pb = store.ad?.sections.flatMap(s => s.pages).flatMap(p => p.placedBlocks).find(b => b.id === placedBlock.id)
+      const existing = (pb?.overrides?.stampSizes as Partial<Record<StampType, number>>) || {}
+      store.updateBlockOverride(placedBlock.id, { stampSizes: { ...existing, [stamp]: newSize } })
+    }
+    const onUp = () => {
+      document.removeEventListener('pointermove', onMove)
+      document.removeEventListener('pointerup', onUp)
+    }
+    document.addEventListener('pointermove', onMove)
+    document.addEventListener('pointerup', onUp)
+  }, [mode, placedBlock.id, scale])
+
   // ── Draggable price circle ──────────────────────────────────────────
   // stopPropagation prevents dnd-kit from starting a block-move drag
   const handleCirclePointerDown = useCallback((e: React.PointerEvent) => {
@@ -134,7 +160,7 @@ export function BlockRenderer({ placedBlock, scale, isSelected, onSelect, mode =
     </div>
   ) : null
 
-  const promoPrice = (feed as Record<string, unknown>).priceText as string | undefined
+  const promoPrice = (overrides.priceText as string) || (feed as Record<string, unknown>).priceText as string | undefined
 
   // ── Shared elements ─────────────────────────────────────────────────
   const baseStyle: React.CSSProperties = {
@@ -154,78 +180,88 @@ export function BlockRenderer({ placedBlock, scale, isSelected, onSelect, mode =
     <div style={{ position: 'absolute', inset: 0, border: '2px solid #1565C0', borderRadius: 4, pointerEvents: 'none', zIndex: 100 }} />
   ) : null
 
+  const stampSizeMap   = (overrides.stampSizes  as Partial<Record<StampType, number>>)  || {}
+  const stampColorMap  = (overrides.stampColors as Partial<Record<StampType, string>>)  || {}
+  const stampShapeMap  = (overrides.stampShapes as Partial<Record<StampType, 'circle' | 'square' | 'pill'>>) || {}
+  const stampTextMap   = (overrides.stampTexts  as Partial<Record<StampType, string>>)  || {}
+
   const stampBadges = stamps.slice(0, 2).map((stamp, i) => {
     const defaultPositions: StampPosition[] = ['top-left', 'top-right']
     const pos = (overrides.stampPositions as Record<string, StampPosition | { x: number; y: number }>)?.[stamp] || defaultPositions[i]
+    const designSize = stampSizeMap[stamp] ?? 48
+    const stampSize = Math.max(20, designSize * scale)
     return (
       <StampBadge
         key={stamp}
         type={stamp}
         position={pos}
         pct={feed.price?.percentOff ?? undefined}
-        size={Math.max(36, 48 * scale)}
+        size={stampSize}
+        colorOverride={stampColorMap[stamp]}
+        shapeOverride={stampShapeMap[stamp]}
+        textOverride={stampTextMap[stamp]}
         onPointerDown={mode === 'edit' ? handleStampPointerDown(stamp) : undefined}
+        onResizePointerDown={mode === 'edit' ? handleStampResizePointerDown(stamp, designSize) : undefined}
         showHandles={isSelected && mode === 'edit'}
       />
     )
   })
 
-  // ── Stamp Overlay mode — standalone draggable stamp badge ──────────
+  // ── Stamp Overlay mode — entire block renders as a large stamp ──────
   if (displayMode === 'stamp_overlay') {
     const stampType = stamps[0] || 'SALE'
     const config = STAMP_CONFIG[stampType] || STAMP_CONFIG['SALE']
-    const rawText = stampType === 'PCT_OFF' && feed.price?.percentOff
-      ? `${feed.price.percentOff}%\nOFF`
-      : config.text
-    const lines = rawText.split('\n')
+
+    // Use same override system as regular stamp badges
+    const stampBgColor  = stampColorMap[stampType] ?? config.bg
+    const stampShape    = stampShapeMap[stampType]
+    const stampText     = stampTextMap[stampType] ?? (
+      stampType === 'PCT_OFF' && feed.price?.percentOff
+        ? `${feed.price.percentOff}%\nOFF`
+        : config.text
+    )
+    const lines = stampText.split('\n')
     const badgeD = Math.min(placedBlock.width, placedBlock.height) * scale * 0.85
     const fontSize = Math.max(7, badgeD * 0.2)
+
+    // Respect shape override, fall back to config shape
+    const stampRadius = stampShape === 'circle' ? '50%'
+      : stampShape === 'pill' ? 999
+      : stampShape === 'square' ? Math.max(4, badgeD * 0.06)
+      : (config.shape === 'circle' || config.shape === 'burst') ? '50%'
+      : Math.max(4, badgeD * 0.06)
 
     return (
       <div
         ref={blockRootRef}
         onClick={onSelect}
         style={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          width: '100%', height: '100%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: mode === 'edit' ? 'grab' : 'default',
-          userSelect: 'none',
+          userSelect: 'none', borderRadius: 4,
           outline: isSelected && mode === 'edit' ? '2px solid #1565C0' : 'none',
           outlineOffset: 2,
-          borderRadius: 4,
         }}
       >
         <div
           style={{
-            width: badgeD,
-            height: badgeD,
-            borderRadius: '50%',
-            backgroundColor: config.bg,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
+            width: badgeD, height: badgeD,
+            borderRadius: stampRadius,
+            backgroundColor: stampBgColor,
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 3px 12px rgba(0,0,0,0.35)',
             border: `${Math.max(2, badgeD * 0.04)}px solid rgba(255,255,255,0.55)`,
             padding: badgeD * 0.06,
           }}
         >
           {lines.map((line, i) => (
-            <span
-              key={i}
-              style={{
-                color: '#fff',
-                fontSize,
-                fontWeight: 900,
-                textTransform: 'uppercase',
-                lineHeight: 1.15,
-                textAlign: 'center',
-                letterSpacing: '0.02em',
-              }}
-            >
+            <span key={i} style={{
+              color: '#fff', fontSize, fontWeight: 900,
+              textTransform: 'uppercase', lineHeight: 1.15,
+              textAlign: 'center', letterSpacing: '0.02em',
+            }}>
               {line}
             </span>
           ))}
@@ -357,7 +393,13 @@ export function BlockRenderer({ placedBlock, scale, isSelected, onSelect, mode =
               flexShrink: 0,
             }}
           >
-            <span style={{ fontWeight: 900, fontSize: Math.max(14, circleSize * 0.38), color: '#111', lineHeight: 1 }}>
+            <span style={{
+              fontWeight: 900,
+              fontSize: (overrides.priceFontSize as number) ?? Math.max(14, circleSize * 0.38),
+              fontFamily: (overrides.priceFontFamily as string) || 'inherit',
+              color: '#111',
+              lineHeight: 1,
+            }}>
               {promoPrice}
             </span>
           </div>

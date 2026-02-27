@@ -1,9 +1,9 @@
 'use client'
-import React from 'react'
+import React, { useState } from 'react'
 import { Template, TemplateLayout } from '@/types'
 import { useAdStore } from '@/stores/adStore'
 import { useUIStore } from '@/stores/uiStore'
-import { X } from 'lucide-react'
+import { X, Plus, RefreshCw } from 'lucide-react'
 
 const CATEGORY_LABELS: Record<string, string> = {
   'hero-feature': 'Hero Feature',
@@ -18,14 +18,30 @@ interface Props {
 }
 
 export function TemplateSelector({ pageId }: Props) {
-  const { templates, swapTemplate, ad } = useAdStore()
+  const { templates, setTemplates, swapTemplate, ad } = useAdStore()
   const { closeTemplateSelector } = useUIStore()
+  const [refreshing, setRefreshing] = useState(false)
 
   const grouped = templates.reduce<Record<string, Template[]>>((acc, t) => {
     if (!acc[t.category]) acc[t.category] = []
     acc[t.category].push(t)
     return acc
   }, {})
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    try {
+      const res = await fetch('/api/templates')
+      const data = await res.json()
+      setTemplates(data)
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
+  const handleCreateTemplate = () => {
+    window.open('/templates/new', '_blank')
+  }
 
   const handleSelect = async (templateId: string) => {
     swapTemplate(pageId, templateId)
@@ -69,16 +85,45 @@ export function TemplateSelector({ pageId }: Props) {
         {/* Header */}
         <div
           style={{
-            padding: '16px 20px',
+            padding: '14px 20px',
             borderBottom: '1px solid #eee',
             display: 'flex',
             alignItems: 'center',
+            gap: 8,
           }}
         >
           <span style={{ fontSize: 16, fontWeight: 700, flex: 1 }}>Choose Template</span>
+
+          {/* Refresh — picks up templates created in another tab */}
+          <button
+            onClick={handleRefresh}
+            title="Refresh template list"
+            style={{
+              background: 'none', border: '1px solid #e0e0e0', borderRadius: 6,
+              cursor: 'pointer', padding: '5px 8px', color: '#666',
+              display: 'flex', alignItems: 'center', gap: 4, fontSize: 11,
+            }}
+          >
+            <RefreshCw size={13} style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }} />
+            {refreshing ? 'Refreshing…' : 'Refresh'}
+          </button>
+
+          {/* Create new template — opens the template builder in a new tab */}
+          <button
+            onClick={handleCreateTemplate}
+            style={{
+              background: '#C8102E', border: 'none', borderRadius: 6,
+              cursor: 'pointer', padding: '6px 12px', color: '#fff',
+              display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600,
+            }}
+          >
+            <Plus size={14} />
+            Create Template
+          </button>
+
           <button
             onClick={closeTemplateSelector}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, marginLeft: 4 }}
           >
             <X size={18} />
           </button>

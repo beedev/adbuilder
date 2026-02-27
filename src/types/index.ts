@@ -66,9 +66,16 @@ export interface PlacedBlockOverrides {
   headline?: string
   description?: string
   disclaimer?: string
+  priceText?: string          // overrides feedJson.priceText for sale bands
+  priceFontFamily?: string    // font family for sale band price text
+  priceFontSize?: number      // font size (px) for sale band price text
   displayMode?: DisplayMode
   stamps?: StampType[]
   stampPositions?: Partial<Record<StampType, StampPosition | { x: number; y: number }>>
+  stampSizes?: Partial<Record<StampType, number>>           // per-stamp size in design units
+  stampColors?: Partial<Record<StampType, string>>          // per-stamp background color override
+  stampShapes?: Partial<Record<StampType, 'circle' | 'square' | 'pill'>>  // per-stamp shape override
+  stampTexts?: Partial<Record<StampType, string>>           // per-stamp label text override
   backgroundColor?: string
   activeImage?: 'product' | 'lifestyle'
   richTextJson?: Record<string, unknown>
