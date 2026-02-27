@@ -67,8 +67,13 @@ export interface PlacedBlockOverrides {
   description?: string
   disclaimer?: string
   priceText?: string          // overrides feedJson.priceText for sale bands
+  priceLabel?: string         // overrides the italic "sale" label on the price circle
   priceFontFamily?: string    // font family for sale band price text
   priceFontSize?: number      // font size (px) for sale band price text
+  headlineFontFamily?: string // font family for sale band headline text
+  headlineFontSize?: number   // font size (px) for sale band headline text
+  descFontFamily?: string     // font family for sale band description text
+  descFontSize?: number       // font size (px) for sale band description text
   displayMode?: DisplayMode
   stamps?: StampType[]
   stampPositions?: Partial<Record<StampType, StampPosition | { x: number; y: number }>>

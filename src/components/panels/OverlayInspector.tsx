@@ -317,24 +317,33 @@ export function OverlayInspector({ placedBlock }: Props) {
             </div>
 
             <div>
+              <FieldLabel>Price Label</FieldLabel>
+              <input
+                value={(overrides.priceLabel as string) ?? ''}
+                onChange={e => updateBlockOverride(placedBlock.id, { priceLabel: e.target.value || undefined })}
+                placeholder="sale"
+                style={{ width: '100%', padding: '6px 8px', border: '1px solid #ddd', borderRadius: 4, fontSize: 12, boxSizing: 'border-box', color: '#111' }}
+              />
+              <div style={{ fontSize: 10, color: '#aaa', marginTop: 2 }}>
+                Overrides the italic "sale" label on the price circle
+              </div>
+            </div>
+
+            <div>
               <FieldLabel>Headline</FieldLabel>
               <input
                 value={(overrides.headline as string) || ''}
                 onChange={e => updateBlockOverride(placedBlock.id, { headline: e.target.value })}
                 placeholder="Sale headline…"
-                style={{ width: '100%', padding: '6px 8px', border: '1px solid #ddd', borderRadius: 4, fontSize: 12, boxSizing: 'border-box', color: '#111' }}
+                style={{ width: '100%', padding: '6px 8px', border: '1px solid #ddd', borderRadius: 4, fontSize: 12, boxSizing: 'border-box', color: '#111', marginBottom: 6 }}
               />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 6 }}>
-              <div>
-                <div style={{ fontSize: 10, color: '#888', marginBottom: 3 }}>Font</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 58px', gap: 6 }}>
                 <select
-                  value={(overrides.priceFontFamily as string) || ''}
-                  onChange={e => updateBlockOverride(placedBlock.id, { priceFontFamily: e.target.value || undefined })}
+                  value={(overrides.headlineFontFamily as string) || ''}
+                  onChange={e => updateBlockOverride(placedBlock.id, { headlineFontFamily: e.target.value || undefined })}
                   style={{ width: '100%', padding: '5px 6px', border: '1px solid #ddd', borderRadius: 4, fontSize: 11, color: '#111', backgroundColor: '#fff' }}
                 >
-                  <option value="">Default</option>
+                  <option value="">Default font</option>
                   <option value="Arial, sans-serif">Arial</option>
                   <option value="'Georgia', serif">Georgia</option>
                   <option value="Impact, sans-serif">Impact</option>
@@ -342,9 +351,72 @@ export function OverlayInspector({ placedBlock }: Props) {
                   <option value="'Courier New', monospace">Courier</option>
                   <option value="'Times New Roman', serif">Times</option>
                 </select>
+                <input
+                  type="number" min={8} max={120} step={1}
+                  value={(overrides.headlineFontSize as number) ?? ''}
+                  placeholder="auto"
+                  onChange={e => {
+                    const v = e.target.value === '' ? undefined : parseInt(e.target.value, 10)
+                    updateBlockOverride(placedBlock.id, { headlineFontSize: v })
+                  }}
+                  style={{ width: '100%', padding: '5px 6px', border: '1px solid #ddd', borderRadius: 4, fontSize: 11, boxSizing: 'border-box', color: '#111' }}
+                />
               </div>
-              <div>
-                <div style={{ fontSize: 10, color: '#888', marginBottom: 3 }}>Size (px)</div>
+            </div>
+
+            <div>
+              <FieldLabel>Description</FieldLabel>
+              <textarea
+                value={(overrides.description as string) || ''}
+                rows={2}
+                onChange={e => updateBlockOverride(placedBlock.id, { description: e.target.value || undefined })}
+                placeholder="Supporting copy…"
+                style={{ width: '100%', padding: '5px 7px', border: '1px solid #ddd', borderRadius: 4, fontSize: 11, resize: 'none', boxSizing: 'border-box', color: '#111', fontFamily: 'inherit', marginBottom: 6 }}
+              />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 58px', gap: 6 }}>
+                <select
+                  value={(overrides.descFontFamily as string) || ''}
+                  onChange={e => updateBlockOverride(placedBlock.id, { descFontFamily: e.target.value || undefined })}
+                  style={{ width: '100%', padding: '5px 6px', border: '1px solid #ddd', borderRadius: 4, fontSize: 11, color: '#111', backgroundColor: '#fff' }}
+                >
+                  <option value="">Default font</option>
+                  <option value="Arial, sans-serif">Arial</option>
+                  <option value="'Georgia', serif">Georgia</option>
+                  <option value="Impact, sans-serif">Impact</option>
+                  <option value="'Trebuchet MS', sans-serif">Trebuchet</option>
+                  <option value="'Courier New', monospace">Courier</option>
+                  <option value="'Times New Roman', serif">Times</option>
+                </select>
+                <input
+                  type="number" min={7} max={72} step={1}
+                  value={(overrides.descFontSize as number) ?? ''}
+                  placeholder="auto"
+                  onChange={e => {
+                    const v = e.target.value === '' ? undefined : parseInt(e.target.value, 10)
+                    updateBlockOverride(placedBlock.id, { descFontSize: v })
+                  }}
+                  style={{ width: '100%', padding: '5px 6px', border: '1px solid #ddd', borderRadius: 4, fontSize: 11, boxSizing: 'border-box', color: '#111' }}
+                />
+              </div>
+            </div>
+
+            {/* Price font */}
+            <div>
+              <FieldLabel>Price Font</FieldLabel>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 58px', gap: 6 }}>
+                <select
+                  value={(overrides.priceFontFamily as string) || ''}
+                  onChange={e => updateBlockOverride(placedBlock.id, { priceFontFamily: e.target.value || undefined })}
+                  style={{ width: '100%', padding: '5px 6px', border: '1px solid #ddd', borderRadius: 4, fontSize: 11, color: '#111', backgroundColor: '#fff' }}
+                >
+                  <option value="">Default font</option>
+                  <option value="Arial, sans-serif">Arial</option>
+                  <option value="'Georgia', serif">Georgia</option>
+                  <option value="Impact, sans-serif">Impact</option>
+                  <option value="'Trebuchet MS', sans-serif">Trebuchet</option>
+                  <option value="'Courier New', monospace">Courier</option>
+                  <option value="'Times New Roman', serif">Times</option>
+                </select>
                 <input
                   type="number" min={8} max={120} step={1}
                   value={(overrides.priceFontSize as number) ?? ''}
@@ -353,7 +425,7 @@ export function OverlayInspector({ placedBlock }: Props) {
                     const v = e.target.value === '' ? undefined : parseInt(e.target.value, 10)
                     updateBlockOverride(placedBlock.id, { priceFontSize: v })
                   }}
-                  style={{ width: 64, padding: '5px 6px', border: '1px solid #ddd', borderRadius: 4, fontSize: 11, boxSizing: 'border-box', color: '#111' }}
+                  style={{ width: '100%', padding: '5px 6px', border: '1px solid #ddd', borderRadius: 4, fontSize: 11, boxSizing: 'border-box', color: '#111' }}
                 />
               </div>
             </div>

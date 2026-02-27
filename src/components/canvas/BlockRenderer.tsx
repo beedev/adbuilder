@@ -157,6 +157,7 @@ export function BlockRenderer({ placedBlock, scale, isSelected, onSelect, mode =
         size={Math.max(40, circleOverlaySize * scaleMultiplier)}
         ringColor={circleRingColor}
         bgColor={circleBgColor}
+        labelText={(overrides.priceLabel as string) || undefined}
       />
     </div>
   ) : null
@@ -258,6 +259,7 @@ export function BlockRenderer({ placedBlock, scale, isSelected, onSelect, mode =
               size={circleSize}
               ringColor={circleRingColor}
               bgColor={circleBgColor}
+              labelText={(overrides.priceLabel as string) || undefined}
             />
           </div>
         )}

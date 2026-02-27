@@ -95,9 +95,14 @@ export function OverlayRenderer({ placedBlock, scale, isSelected, onSelect, mode
     const description = (overrides.description as string) || feed?.description || ''
     const disclaimer  = (overrides.disclaimer  as string) || feed?.disclaimer  || ''
     const promoPrice  = (overrides.priceText   as string) || (feed as Record<string, unknown>)?.priceText as string | undefined
+    const priceLabel  = (overrides.priceLabel  as string) || undefined
     const hasPrice    = !!feed?.price || !!feed?.upc
     const circleRingColor = (overrides.priceCircleRingColor as string) || 'rgba(255,255,255,0.8)'
     const circleBgColor   = (overrides.priceCircleBackground as string) || 'rgba(255,255,255,0.95)'
+    const headlineFontFamily = (overrides.headlineFontFamily as string) || undefined
+    const headlineFontSize   = (overrides.headlineFontSize  as number) || undefined
+    const descFontFamily     = (overrides.descFontFamily    as string) || undefined
+    const descFontSize       = (overrides.descFontSize      as number) || undefined
     const circleSize = Math.min(
       placedBlock.height * scale * 0.72,
       placedBlock.width  * scale * 0.32,
@@ -129,7 +134,17 @@ export function OverlayRenderer({ placedBlock, scale, isSelected, onSelect, mode
             border: `${Math.max(2, circleSize * 0.04)}px dashed rgba(255,255,255,0.8)`,
             display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            overflow: 'hidden',
           }}>
+            {/* italic label above price */}
+            <span style={{
+              fontStyle: 'italic', fontWeight: 800,
+              fontSize: Math.max(7, circleSize * 0.14),
+              color: bandBg, lineHeight: 1,
+              marginBottom: circleSize * 0.02,
+            }}>
+              {priceLabel ?? 'sale'}
+            </span>
             <span style={{
               fontWeight: 900,
               fontSize: (overrides.priceFontSize as number) ?? Math.max(14, circleSize * 0.38),
@@ -146,6 +161,7 @@ export function OverlayRenderer({ placedBlock, scale, isSelected, onSelect, mode
             size={circleSize}
             ringColor={circleRingColor}
             bgColor={circleBgColor}
+            labelText={priceLabel}
           />
         ) : null}
 
@@ -153,7 +169,9 @@ export function OverlayRenderer({ placedBlock, scale, isSelected, onSelect, mode
         <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
           {headline && (
             <div style={{
-              fontSize: Math.max(9, 14 * scale), fontWeight: 900, color: '#fff',
+              fontSize: headlineFontSize ?? Math.max(9, 14 * scale),
+              fontFamily: headlineFontFamily,
+              fontWeight: 900, color: '#fff',
               lineHeight: 1.15, marginBottom: 2,
               overflow: 'hidden', display: '-webkit-box',
               WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
@@ -163,7 +181,9 @@ export function OverlayRenderer({ placedBlock, scale, isSelected, onSelect, mode
           )}
           {description && (
             <div style={{
-              fontSize: Math.max(7, 10 * scale), color: 'rgba(255,255,255,0.88)',
+              fontSize: descFontSize ?? Math.max(7, 10 * scale),
+              fontFamily: descFontFamily,
+              color: 'rgba(255,255,255,0.88)',
               lineHeight: 1.3,
               overflow: 'hidden', display: '-webkit-box',
               WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',

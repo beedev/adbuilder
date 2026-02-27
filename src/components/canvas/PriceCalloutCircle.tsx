@@ -49,6 +49,7 @@ interface Props {
   size: number         // outer diameter in pixels (already scaled)
   ringColor?: string
   bgColor?: string
+  labelText?: string   // override the computed italic label (e.g. "sale")
 }
 
 export function PriceCalloutCircle({
@@ -57,11 +58,13 @@ export function PriceCalloutCircle({
   size,
   ringColor = '#C8102E',
   bgColor = '#FFFAFA',
+  labelText,
 }: Props) {
   const price = usePriceStore(s => s.getPrice(upc)) ?? fallbackPrice
   if (!price) return null
 
-  const { label, main, sup, sub } = formatCirclePrice(price)
+  const { label: computedLabel, main, sup, sub } = formatCirclePrice(price)
+  const label = labelText ?? computedLabel
   const innerSize = size - 10   // gap for dashed ring
 
   return (
