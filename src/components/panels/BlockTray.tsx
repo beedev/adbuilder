@@ -288,8 +288,7 @@ export function BlockTray({ blockData, placedBlockDataIds, adId, onBlockCreated 
   const [showCreator, setShowCreator] = useState(false)
 
   // Section collapse state
-  const [stampOpen, setStampOpen] = useState(true)
-  const [compOpen, setCompOpen]   = useState(true)
+  const [overlaysOpen, setOverlaysOpen] = useState(true)
   const [blocksOpen, setBlocksOpen] = useState(true)
 
   // Only show genuine product/overlay blocks — exclude stamp overlay and sale band
@@ -325,46 +324,42 @@ export function BlockTray({ blockData, placedBlockDataIds, adId, onBlockCreated 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
 
-      {/* ── Stamps ─────────────────────────────────────────────────────── */}
+      {/* ── Overlays (Stamps + Sale Bands) ─────────────────────────────── */}
       <div style={{ borderBottom: '1px solid #f0f0f0', padding: '6px 8px' }}>
         <SectionHeader
-          label="Stamps"
-          count={STAMP_OVERLAY_COMPONENTS.length}
-          open={stampOpen}
-          onToggle={() => setStampOpen(p => !p)}
+          label="Overlays"
+          count={STAMP_OVERLAY_COMPONENTS.length + SALE_BAND_COMPONENTS.length}
+          open={overlaysOpen}
+          onToggle={() => setOverlaysOpen(p => !p)}
         />
-        {stampOpen && (
-          <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5, marginTop: 6 }}>
-              {STAMP_OVERLAY_COMPONENTS.map(def => (
-                <StampOverlayCard key={def.id} def={def} />
+        {overlaysOpen && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 6 }}>
+
+            {/* Stamps grid */}
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 700, color: '#bbb', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>
+                Stamps
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5 }}>
+                {STAMP_OVERLAY_COMPONENTS.map(def => (
+                  <StampOverlayCard key={def.id} def={def} />
+                ))}
+              </div>
+            </div>
+
+            {/* Sale bands list */}
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 700, color: '#bbb', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>
+                Sale Bands
+              </div>
+              {SALE_BAND_COMPONENTS.map(def => (
+                <ComponentCard key={def.id} def={def} />
               ))}
             </div>
-            <div style={{ fontSize: 9, color: '#bbb', marginTop: 6, textAlign: 'center' }}>
-              Drag onto canvas or onto a block
-            </div>
-          </>
-        )}
-      </div>
 
-      {/* ── Sale Band Components ────────────────────────────────────────── */}
-      <div style={{ borderBottom: '1px solid #f0f0f0', padding: '6px 8px' }}>
-        <SectionHeader
-          label="Components"
-          count={SALE_BAND_COMPONENTS.length}
-          open={compOpen}
-          onToggle={() => setCompOpen(p => !p)}
-        />
-        {compOpen && (
-          <div style={{ marginTop: 6 }}>
-            {SALE_BAND_COMPONENTS.map(def => (
-              <ComponentCard key={def.id} def={def} />
-            ))}
-          </div>
-        )}
-        {compOpen && (
-          <div style={{ fontSize: 9, color: '#bbb', marginTop: 2, textAlign: 'center' }}>
-            Drag onto canvas · edit text in Inspector after placing
+            <div style={{ fontSize: 9, color: '#bbb', textAlign: 'center' }}>
+              Drag onto canvas · select to edit in Inspector
+            </div>
           </div>
         )}
       </div>

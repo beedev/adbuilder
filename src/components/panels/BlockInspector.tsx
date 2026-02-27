@@ -5,6 +5,7 @@ import { useAdStore } from '@/stores/adStore'
 import { useUIStore } from '@/stores/uiStore'
 import { Trash2, Maximize2, ChevronDown } from 'lucide-react'
 import { STAMP_CONFIG } from '@/components/canvas/StampBadge'
+import { OverlayInspector } from './OverlayInspector'
 
 const DISPLAY_MODES: { value: DisplayMode; label: string; desc: string }[] = [
   { value: 'product_image',   label: 'Product Image',           desc: 'Image only' },
@@ -136,7 +137,13 @@ export function BlockInspector({ placedBlock }: Props) {
 
   if (!feed) return null
 
-  const isStampOnly = (feed as Record<string, unknown>).blockType === 'overlay'
+  // Overlay blocks (stamp overlays, sale band overlays) get their own clean inspector
+  const blockType = (feed as Record<string, unknown>).blockType as string | undefined
+  if (blockType === 'overlay' || blockType === 'promotional') {
+    return <OverlayInspector placedBlock={placedBlock} />
+  }
+
+  const isStampOnly = blockType === 'overlay'
   const isSaleBand = currentMode === 'sale_band'
   const hasFeedPriceText = !!(feed as Record<string, unknown>).priceText
   const hasPrice = !!feed.price || !!feed.upc
