@@ -3,7 +3,7 @@ import { useEffect, useState, use } from 'react'
 import { Ad, Page, Comment, BlockData } from '@/types'
 import { PageCanvas } from '@/components/canvas/PageCanvas'
 import { usePriceStore } from '@/stores/priceStore'
-import { Store, Check, X, MessageSquare, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Store, Check, X, MessageSquare, RotateCcw, ChevronLeft, ChevronRight, FileDown } from 'lucide-react'
 import { format } from 'date-fns'
 
 export default function ReviewPage({ params }: { params: Promise<{ id: string }> }) {
@@ -16,6 +16,33 @@ export default function ReviewPage({ params }: { params: Promise<{ id: string }>
   const [submitting, setSubmitting] = useState(false)
   const [decision, setDecision] = useState<'approve' | 'reject' | 'changes' | null>(null)
   const [decisionNote, setDecisionNote] = useState('')
+  const [isExporting, setIsExporting] = useState(false)
+
+  async function handleExportPdf() {
+    if (isExporting) return
+    setIsExporting(true)
+    try {
+      const res = await fetch(`/api/ads/${id}/export/pdf`, { method: 'POST' })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        alert(body.error || 'PDF export failed. Please try again.')
+        return
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `weekly-ad-${ad?.name.replace(/[^a-z0-9]+/gi, '-').toLowerCase() ?? id}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      alert('PDF export failed. Please try again.')
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   useEffect(() => {
     async function load() {
@@ -114,6 +141,16 @@ export default function ReviewPage({ params }: { params: Promise<{ id: string }>
             {ad.status.replace('_', ' ')}
           </div>
         </div>
+        <button
+          onClick={handleExportPdf}
+          disabled={isExporting}
+          title="Download as PDF"
+          style={{ padding: '6px 14px', border: '1px solid #ddd', borderRadius: 6, backgroundColor: '#fff', color: isExporting ? '#bbb' : '#555', cursor: isExporting ? 'default' : 'pointer', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4, opacity: isExporting ? 0.7 : 1 }}
+        >
+          <FileDown size={13} />
+          {isExporting ? 'Exporting…' : 'Export PDF'}
+        </button>
+
         {ad.status === 'in_review' && (
           <div style={{ display: 'flex', gap: 8 }}>
             <button
