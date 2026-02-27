@@ -3,12 +3,18 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --brand-red: #C8102E;
+  --brand-green: #1B5E20;
+  --brand-gold: #F9A825;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-brand-red: var(--brand-red);
+  --color-brand-green: var(--brand-green);
+  --color-brand-gold: var(--brand-gold);
+  --font-sans: var(--font-geist-sans), Inter, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
 }
 

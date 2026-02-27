@@ -1,0 +1,172 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  role      String   @default("designer") // designer | approver | admin
+  createdAt DateTime @default(now())
+
+  adsCreated    Ad[]      @relation("AdCreator")
+  adsLocked     Ad[]      @relation("AdLocker")
+  comments      Comment[]
+  auditLogs     AuditLog[]
+  priceOverrides PriceOverride[]
+}
+
+model Ad {
+  id          String   @id @default(uuid())
+  name        String
+  regionIds   String[] @default([])
+  validFrom   DateTime
+  validTo     DateTime
+  status      String   @default("draft") // draft | in_review | approved | published
+  version     Int      @default(1)
+
+  createdById String
+  createdBy   User     @relation("AdCreator", fields: [createdById], references: [id])
+
+  lockedById  String?
+  lockedBy    User?    @relation("AdLocker", fields: [lockedById], references: [id])
+  lockedAt    DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sections    Section[]
+  blockData   BlockData[]
+  priceOverrides PriceOverride[]
+  comments    Comment[]
+  auditLogs   AuditLog[]
+  versions    AdVersion[]
+}
+
+model Section {
+  id         String  @id @default(uuid())
+  adId       String
+  ad         Ad      @relation(fields: [adId], references: [id], onDelete: Cascade)
+  name       String
+  position   Int
+  themeColor String?
+  createdAt  DateTime @default(now())
+
+  pages      Page[]
+}
+
+model Page {
+  id          String   @id @default(uuid())
+  sectionId   String
+  section     Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  templateId  String?
+  template    Template? @relation(fields: [templateId], references: [id])
+  pageType    String   @default("interior") // front_cover | back_cover | interior | centerfold
+  position    Int
+  createdAt   DateTime @default(now())
+
+  placedBlocks PlacedBlock[]
+  comments     Comment[]
+}
+
+model PlacedBlock {
+  id            String  @id @default(uuid())
+  pageId        String
+  page          Page    @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  blockDataId   String
+  blockData     BlockData @relation(fields: [blockDataId], references: [id])
+  zoneId        String?
+  x             Float
+  y             Float
+  width         Float
+  height        Float
+  zIndex        Int     @default(1)
+  overrides     Json    @default("{}")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  comments      Comment[]
+}
+
+model BlockData {
+  id          String   @id @default(uuid())
+  blockId     String
+  upc         String
+  feedJson    Json
+  regionId    String?
+  adId        String
+  ad          Ad       @relation(fields: [adId], references: [id], onDelete: Cascade)
+  importedAt  DateTime @default(now())
+
+  placedBlocks PlacedBlock[]
+}
+
+model PriceOverride {
+  id        String   @id @default(uuid())
+  adId      String
+  ad        Ad       @relation(fields: [adId], references: [id], onDelete: Cascade)
+  upc       String
+  regionId  String
+  price     Json
+  setById   String
+  setBy     User     @relation(fields: [setById], references: [id])
+  setAt     DateTime @default(now())
+
+  @@unique([adId, upc, regionId])
+}
+
+model Template {
+  id           String   @id @default(uuid())
+  name         String
+  category     String   // hero-feature | editorial | promotional | full-bleed | split
+  orientation  String   @default("portrait")
+  layoutJson   Json
+  thumbnailUrl String?
+  isSystem     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  pages        Page[]
+}
+
+model Comment {
+  id           String   @id @default(uuid())
+  adId         String
+  ad           Ad       @relation(fields: [adId], references: [id], onDelete: Cascade)
+  pageId       String?
+  page         Page?    @relation(fields: [pageId], references: [id])
+  placedBlockId String?
+  placedBlock  PlacedBlock? @relation(fields: [placedBlockId], references: [id])
+  text         String
+  resolved     Boolean  @default(false)
+  authorId     String
+  author       User     @relation(fields: [authorId], references: [id])
+  createdAt    DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  adId       String?
+  ad         Ad?      @relation(fields: [adId], references: [id])
+  action     String
+  entityType String
+  entityId   String
+  oldVal     Json?
+  newVal     Json?
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  ts         DateTime @default(now())
+}
+
+model AdVersion {
+  id          String   @id @default(uuid())
+  adId        String
+  ad          Ad       @relation(fields: [adId], references: [id], onDelete: Cascade)
+  version     Int
+  snapshot    Json
+  triggeredBy String   @default("submit")
+  createdAt   DateTime @default(now())
+}

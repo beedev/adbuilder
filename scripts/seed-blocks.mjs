@@ -1,0 +1,582 @@
+/**
+ * Seed block data from Meijer Weekly Deals PDF (Feb 25 – Mar 3, 2026)
+ * Run: node scripts/seed-blocks.mjs
+ */
+import pg from 'pg'
+import { randomUUID } from 'crypto'
+
+const { Pool } = pg
+const pool = new Pool({ connectionString: 'postgresql://postgres:postgres@localhost:5432/weekly_ad_builder' })
+
+const AD_ID = 'dd217886-ffdc-41ad-9b0b-ac95dee77fb9'
+
+const products = [
+  {
+    productName: 'Meijer Frozen Personal Pizza',
+    upc: '041250029114',
+    category: 'Frozen Foods',
+    price: { regular: 2.99, sale: 1.00, unit: 'each', percentOff: 67 },
+    headline: '$1 Deal — Final Price When You Buy 5 or More',
+    description: '7.2 oz. Select varieties. Limit 10.',
+    stamps: ['sale', 'hot'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Frozen Pizza' } },
+  },
+  {
+    productName: 'Sparkling Ice Flavored Water',
+    upc: '078732202019',
+    category: 'Beverages',
+    price: { regular: 1.99, sale: 1.00, unit: 'each', percentOff: 50 },
+    headline: '$1 Deal — Final Price When You Buy 5 or More',
+    description: '17 oz. bottle. Select varieties. Plus deposit where applicable. Limit 10.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1560023907-5f339617ea30?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Sparkling Ice' } },
+  },
+  {
+    productName: 'Fresh from Meijer Ultimate Cookies',
+    upc: '041250098811',
+    category: 'Bakery',
+    price: { regular: 5.99, sale: 1.00, unit: 'each', percentOff: 83 },
+    headline: '$1 Deal — Freshly Baked In-Store',
+    description: '12 ct./10-16 oz.',
+    stamps: ['sale', 'hot'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Sugar Cookies' } },
+  },
+  {
+    productName: 'Meijer Potato Chips',
+    upc: '041250027318',
+    category: 'Snacks',
+    price: { regular: 3.49, sale: 1.00, unit: 'each', percentOff: 71 },
+    headline: '$1 Deal When You Buy 3 or More',
+    description: 'Potato Chips 7.75 oz., Tortilla Chips 9.25-13 oz. Select varieties.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Potato Chips' } },
+  },
+  {
+    productName: 'Boneless Chicken Tenderloins',
+    upc: '041250045512',
+    category: 'Meat & Seafood',
+    price: { regular: 3.99, sale: 1.29, unit: 'lb', percentOff: 68 },
+    headline: 'All Natural — Family Pack Value',
+    description: 'All natural. Fresh from Meijer family pack.',
+    stamps: ['sale', 'hot'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1604503468506-a8da13d82791?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Chicken Tenderloins' } },
+  },
+  {
+    productName: 'Chicken Drumsticks Family Pack',
+    upc: '041250045529',
+    category: 'Meat & Seafood',
+    price: { regular: 2.49, sale: 0.99, unit: 'lb', percentOff: 60 },
+    headline: 'All Natural Family Pack',
+    description: 'All natural. Fresh from Meijer family pack drumsticks.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1587593810167-a84920ea0781?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Chicken Drumsticks' } },
+  },
+  {
+    productName: 'Strawberries 16 oz.',
+    upc: '033383050016',
+    category: 'Produce',
+    price: { regular: 4.99, sale: 3.98, unit: 'each', percentOff: 20 },
+    headline: 'Fresh Picked — Great Value',
+    description: '16 oz. container strawberries or whole pineapple.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Strawberries' } },
+  },
+  {
+    productName: 'Starbucks Coffee',
+    upc: '076571037514',
+    category: 'Beverages',
+    price: { regular: 12.99, sale: 6.99, unit: 'each', percentOff: 46 },
+    headline: 'Brew Cafe-Quality at Home',
+    description: '10-12 oz. bag, K-Cups 10 ct. Select varieties.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Starbucks Coffee' } },
+  },
+  {
+    productName: 'Healthy Choice Steamers',
+    upc: '072655000118',
+    category: 'Frozen Foods',
+    price: { regular: 4.99, sale: 3.99, unit: 'each', percentOff: 20 },
+    headline: 'Delicious Frozen Entrées on Sale',
+    description: 'Healthy Choice Steamers 9-10.3 oz. Select varieties.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Healthy Choice' } },
+  },
+  {
+    productName: 'Navel Oranges 8 lb. Bag',
+    upc: '033383079017',
+    category: 'Produce',
+    price: { regular: 7.99, sale: 5.99, unit: 'each', percentOff: 25 },
+    headline: 'Juicy & Sweet — 8 lb. Bag Value',
+    description: '8 lb. bag.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1547514701-42782101795e?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Navel Oranges' } },
+  },
+  {
+    productName: 'Red Seedless Grapes',
+    upc: '033383079031',
+    category: 'Produce',
+    price: { regular: 2.99, sale: 1.99, unit: 'lb', percentOff: 33 },
+    headline: 'Fresh & Crisp',
+    description: 'Red seedless grapes, sold by the pound.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1537640538966-79f369143f8f?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Red Grapes' } },
+  },
+  {
+    productName: 'Certified Angus Beef Ribeye Steak',
+    upc: '021130097647',
+    category: 'Meat & Seafood',
+    price: { regular: 19.99, sale: 14.99, unit: 'lb', percentOff: 25 },
+    headline: 'Premium Angus Beef — Restaurant Quality',
+    description: 'Certified Angus Beef boneless ribeye steak.',
+    stamps: ['sale', 'hot'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Ribeye Steak' } },
+  },
+  {
+    productName: 'Atlantic Salmon Portions',
+    upc: '041250062311',
+    category: 'Meat & Seafood',
+    price: { regular: 12.99, sale: 7.99, unit: 'each', percentOff: 38 },
+    headline: 'Fresh & Sustainable — 12 oz.',
+    description: 'Fresh from Meijer Atlantic Salmon Portions 12 oz.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Salmon Portions' } },
+  },
+  {
+    productName: 'Jimmy Dean Breakfast Sausage',
+    upc: '077900520016',
+    category: 'Meat & Seafood',
+    price: { regular: 6.99, sale: 4.00, unit: 'each', percentOff: null },
+    headline: '2 for $8 — Morning Favorites',
+    description: 'Breakfast Sausage Rolls, Links, Patties 9.6-16 oz. or Bacon 12 oz.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1574894709920-11b28e7367e3?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Jimmy Dean Sausage' } },
+  },
+  {
+    productName: 'Dietz & Watson Deli Meat',
+    upc: '031506100019',
+    category: 'Deli',
+    price: { regular: 10.99, sale: 7.49, unit: 'lb', percentOff: 32 },
+    headline: 'Deli Dept. Premium Sliced Meat',
+    description: 'Ham, Chicken, Turkey or Italian Meat. Sliced to order.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1606756790138-261d2b21cd75?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Deli Meat' } },
+  },
+  {
+    productName: 'Marinated Pork Tenderloin',
+    upc: '041250048315',
+    category: 'Meat & Seafood',
+    price: { regular: 7.99, sale: 5.99, unit: 'each', percentOff: 25 },
+    headline: 'Pre-Marinated & Ready to Cook',
+    description: '18.4-22 oz. Fresh from Meijer marinated pork tenderloin.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1432139555190-58524dae6a55?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Pork Tenderloin' } },
+  },
+  {
+    productName: 'Pork Loin Center Cut Chops',
+    upc: '041250048421',
+    category: 'Meat & Seafood',
+    price: { regular: 4.99, sale: 3.49, unit: 'lb', percentOff: 30 },
+    headline: 'Bone-In for Maximum Flavor',
+    description: 'Fresh from Meijer Pork Loin Center Cut Chops Bone In.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1432139509613-5c4255815697?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Pork Chops' } },
+  },
+  {
+    productName: 'Cosmic Crisp Apples 5 lb.',
+    upc: '033383079024',
+    category: 'Produce',
+    price: { regular: 7.99, sale: 5.99, unit: 'each', percentOff: 25 },
+    headline: '5 lb. Bag — Sweet & Crisp',
+    description: 'Cosmic Crisp Apples 5 lb. bag or Halo Mandarins 5 lb. bag.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1570913149827-d2ac84ab3f9a?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Cosmic Crisp Apples' } },
+  },
+  {
+    productName: 'Ground Beef 80% Lean 1 lb.',
+    upc: '041250044812',
+    category: 'Meat & Seafood',
+    price: { regular: 5.99, sale: 3.99, unit: 'each', percentOff: 33 },
+    headline: 'BOGO 30% Off — Everyday Protein',
+    description: '80% lean Ground Beef and Pork Blend 1 lb. roll.',
+    stamps: ['sale', 'bogo'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1588347818036-c7d3e93f5628?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Ground Beef' } },
+  },
+  {
+    productName: 'Kraft Shredded Cheese',
+    upc: '021000011421',
+    category: 'Dairy',
+    price: { regular: 4.29, sale: 3.00, unit: 'each', percentOff: null },
+    headline: '2 for $6 — Shred, Slice, Melt',
+    description: '7-8 oz. Or Philadelphia Brick Cream Cheese 8 oz. Select varieties.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Kraft Cheese' } },
+  },
+  {
+    productName: 'General Mills Giant Size Cereal',
+    upc: '016000467613',
+    category: 'Breakfast & Cereal',
+    price: { regular: 7.99, sale: 4.99, unit: 'each', percentOff: 38 },
+    headline: 'Giant Size Savings — Family Favorite',
+    description: '20-29 oz. box. Select varieties.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?auto=format&fit=crop&w=400&h=400&q=80', altText: 'General Mills Cereal' } },
+  },
+  {
+    productName: "Ben & Jerry's Ice Cream",
+    upc: '076840100124',
+    category: 'Frozen Foods',
+    price: { regular: 5.99, sale: 3.99, unit: 'each', percentOff: 33 },
+    headline: "Chunky Monkey Deal — 2 for $8",
+    description: "8-16 oz. Select varieties.",
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1501443762994-82bd5dace89a?auto=format&fit=crop&w=400&h=400&q=80', altText: "Ben & Jerry's" } },
+  },
+  {
+    productName: 'Coca-Cola 24 pk. Cans',
+    upc: '049000028911',
+    category: 'Beverages',
+    price: { regular: 14.99, sale: 12.49, unit: 'pack', percentOff: 17 },
+    headline: 'Stock Up & Save — 24-Pack Cans',
+    description: '24 pk./12 oz. cans. Select varieties. Plus deposit.',
+    stamps: ['sale', 'hot'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1629203851122-3726ecdf080e?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Coca-Cola' } },
+  },
+  {
+    productName: 'Meijer Purified Water 40 pk.',
+    upc: '041250024010',
+    category: 'Beverages',
+    price: { regular: 5.99, sale: 4.99, unit: 'each', percentOff: 17 },
+    headline: 'Hydrate & Save — 40 Pack',
+    description: '40 pk./16.9 oz. bottles.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1616118132534-381148898bb4?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Purified Water' } },
+  },
+  {
+    productName: "Hershey's Party Size Candy",
+    upc: '034000003570',
+    category: 'Snacks',
+    price: { regular: 15.99, sale: 11.99, unit: 'each', percentOff: 25 },
+    headline: 'Party-Ready Sweet Deals',
+    description: "24.05-39 oz. Hershey's Party Size Bagged Candy. Select varieties.",
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1606312619070-d48b4c652a52?auto=format&fit=crop&w=400&h=400&q=80', altText: "Hershey's Candy" } },
+  },
+  {
+    productName: 'Pillsbury Crescents & Biscuits',
+    upc: '018000435340',
+    category: 'Bakery',
+    price: { regular: 4.49, sale: 3.00, unit: 'each', percentOff: null },
+    headline: '2 for $6 — Bake It Fresh',
+    description: 'Crescents, Cinnamon Rolls or Grands Biscuits 8-16.3 oz. Select varieties.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Pillsbury' } },
+  },
+  {
+    productName: 'Jennie-O Ground Turkey 3 lb.',
+    upc: '042222000132',
+    category: 'Meat & Seafood',
+    price: { regular: 14.99, sale: 11.99, unit: 'each', percentOff: 20 },
+    headline: 'Lean & Clean Protein — 3 lb. Roll',
+    description: '3 lb. roll. 85% or 90% lean. Fresh.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Ground Turkey' } },
+  },
+  {
+    productName: 'Certified Angus Beef Bottom Round Roast',
+    upc: '021130097654',
+    category: 'Meat & Seafood',
+    price: { regular: 9.99, sale: 6.99, unit: 'lb', percentOff: 30 },
+    headline: 'Certified Angus Beef — Sunday Roast',
+    description: 'Certified Angus Beef Bottom Round or Eye of Round Roast.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Beef Roast' } },
+  },
+  {
+    productName: 'Gorton\'s Frozen Fish & Shrimp',
+    upc: '044400157519',
+    category: 'Frozen Foods',
+    price: { regular: 8.99, sale: 5.99, unit: 'each', percentOff: 33 },
+    headline: 'Lent Season Seafood Deal',
+    description: "Gorton's 8-24.5 oz. or SeaPak Frozen Seafood 8.2-18 oz. Select varieties.",
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1559847844-5315695dadae?auto=format&fit=crop&w=400&h=400&q=80', altText: "Gorton's Fish" } },
+  },
+  {
+    productName: 'StarKist Chunk Light Tuna',
+    upc: '080000517019',
+    category: 'Grocery',
+    price: { regular: 1.49, sale: 0.89, unit: 'each', percentOff: 40 },
+    headline: 'Lent-Ready Tuna Deal',
+    description: 'StarKist Chunk Light Tuna 5 oz. can.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?auto=format&fit=crop&w=400&h=400&q=80', altText: 'StarKist Tuna' } },
+  },
+  {
+    productName: 'Hudsonville Ice Cream 48 oz.',
+    upc: '041268192619',
+    category: 'Frozen Foods',
+    price: { regular: 6.99, sale: 3.99, unit: 'each', percentOff: 43 },
+    headline: "Michigan's Favorite — Big Savings",
+    description: "Hudsonville Ice Cream 48 oz. Select varieties.",
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Hudsonville' } },
+  },
+  {
+    productName: 'Red Baron Frozen Pizza',
+    upc: '072180580013',
+    category: 'Frozen Foods',
+    price: { regular: 6.99, sale: null, unit: 'each', percentOff: null },
+    headline: 'Classic Pizza Night',
+    description: 'Red Baron Frozen Pizza 11.12-23.45 oz. Select varieties.',
+    stamps: ['new'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Red Baron Pizza' } },
+  },
+  {
+    productName: "Kellogg's Raisin Bran Cereal",
+    upc: '038000591013',
+    category: 'Breakfast & Cereal',
+    price: { regular: 5.99, sale: 1.99, unit: 'each', percentOff: null },
+    headline: 'BOGO Free — Wake Up to Savings',
+    description: "Kellogg's Raisin Bran, Frosted Flakes or Froot Loops 8.8-16.1 oz. Select varieties.",
+    stamps: ['bogo', 'sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1584568694244-14fbdf83bd30?auto=format&fit=crop&w=400&h=400&q=80', altText: "Kellogg's Cereal" } },
+  },
+  {
+    productName: "Campbell's Chunky Soups",
+    upc: '051000013309',
+    category: 'Grocery',
+    price: { regular: 2.99, sale: 2.00, unit: 'each', percentOff: null },
+    headline: '4 for $8 — Hearty & Ready',
+    description: "Campbell's Chunky Soups 18.6-19 oz. Select varieties.",
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=400&h=400&q=80', altText: "Campbell's Soup" } },
+  },
+  {
+    productName: 'Doritos & Tostitos Snacks',
+    upc: '028400090124',
+    category: 'Snacks',
+    price: { regular: 5.49, sale: null, unit: 'each', percentOff: null },
+    headline: 'Buy 2, Get 1 FREE — Game Day Ready',
+    description: 'Doritos 6-10.75 oz., Tostitos 9-13 oz., Ruffles 8-8.5 oz. Select varieties.',
+    stamps: ['bogo', 'sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1600952841320-db92ec4047ca?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Doritos' } },
+  },
+  {
+    productName: "Dave's Killer Bread",
+    upc: '013764310022',
+    category: 'Bakery',
+    price: { regular: 6.99, sale: 5.49, unit: 'each', percentOff: 21 },
+    headline: 'Organic & Killer Good — Thin-Sliced',
+    description: "Dave's Killer Bread Organic Thin-Sliced 20.5 oz. Select varieties.",
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1549931319-a545dcf3bc7c?auto=format&fit=crop&w=400&h=400&q=80', altText: "Dave's Killer Bread" } },
+  },
+  {
+    productName: 'Monster Energy Drinks',
+    upc: '070847011426',
+    category: 'Beverages',
+    price: { regular: 2.49, sale: null, unit: 'each', percentOff: null },
+    headline: '3 for $7 — Unleash the Beast',
+    description: '16 oz. can. Select varieties. Plus deposit. Quantities less than 3 at regular price.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1622543925917-763c34d1a86e?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Monster Energy' } },
+  },
+  {
+    productName: 'Charmin Bath Tissue 12 Mega',
+    upc: '037000751359',
+    category: 'Household Essentials',
+    price: { regular: 14.99, sale: 13.99, unit: 'each', percentOff: 7 },
+    headline: 'BOGO Free — Squeeze the Savings',
+    description: '12 mega rolls.',
+    stamps: ['bogo', 'sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1584556812952-905ffd0c611a?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Charmin' } },
+  },
+  {
+    productName: 'Tide Liquid Detergent',
+    upc: '037000743316',
+    category: 'Household Essentials',
+    price: { regular: 19.99, sale: 16.99, unit: 'each', percentOff: 15 },
+    headline: "Trusted Clean — America's #1 Detergent",
+    description: 'Tide Liquid Detergent 117-132 oz. or Pods 57-76 ct.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Tide Detergent' } },
+  },
+  {
+    productName: 'Michelob Ultra 24 pk.',
+    upc: '018200016083',
+    category: 'Beer & Spirits',
+    price: { regular: 25.99, sale: 20.99, unit: 'pack', percentOff: 19 },
+    headline: 'Save $5 with Mfr. Rebate — Final $15.99',
+    description: '24 pk./12 oz. cans. Select varieties. Limit one.',
+    stamps: ['sale', 'hot'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1608270586620-248524c67de9?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Michelob Ultra' } },
+  },
+  {
+    productName: "Tito's Handmade Vodka 1.75 L",
+    upc: '619947000079',
+    category: 'Beer & Spirits',
+    price: { regular: 36.99, sale: 28.99, unit: 'each', percentOff: 22 },
+    headline: "America's #1 Craft Vodka — Big Value",
+    description: "Tito's Handmade Vodka 1.75 liter.",
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1569529465841-dfecdab7503b?auto=format&fit=crop&w=400&h=400&q=80', altText: "Tito's Vodka" } },
+  },
+  {
+    productName: 'Sumo Citrus Mandarins 2 lb.',
+    upc: '033383079048',
+    category: 'Produce',
+    price: { regular: 6.99, sale: 5.49, unit: 'each', percentOff: 21 },
+    headline: 'Seedless & Sweet — 2 lb. Bag',
+    description: 'Sumo Citrus Mandarins 2 lb. bag.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1582979512210-99b6a53386f9?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Sumo Mandarins' } },
+  },
+  {
+    productName: 'Dole Salad Blend',
+    upc: '071430011017',
+    category: 'Produce',
+    price: { regular: 3.99, sale: 2.69, unit: 'each', percentOff: 33 },
+    headline: 'Fresh Salad Greens — Ready to Toss',
+    description: 'Dole Salad Blend 5-12 oz. or Classic Romaine 9 oz.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Dole Salad' } },
+  },
+  {
+    productName: 'Pompeian Olive Oil 24 oz.',
+    upc: '070896005007',
+    category: 'Grocery',
+    price: { regular: 9.99, sale: 6.99, unit: 'each', percentOff: 30 },
+    headline: 'Pure & Flavorful — 24 oz.',
+    description: 'Pompeian Olive Oil or Organic Olive Oil 24 oz. Select varieties.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Olive Oil' } },
+  },
+  {
+    productName: 'Pepperidge Farm Goldfish',
+    upc: '014100100118',
+    category: 'Snacks',
+    price: { regular: 4.99, sale: null, unit: 'each', percentOff: null },
+    headline: '3 for $6 — The Snack That Smiles Back',
+    description: '4.8-8 oz. Select varieties. Quantities less than 3 at regular price.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1621939514649-280e2ee25f60?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Goldfish Crackers' } },
+  },
+  {
+    productName: 'Green Giant Frozen Vegetables',
+    upc: '020000104287',
+    category: 'Frozen Foods',
+    price: { regular: 1.79, sale: 1.00, unit: 'each', percentOff: 44 },
+    headline: '$1 Deal — Wholesome Veggie Value',
+    description: 'Green Giant Frozen Vegetables 8-10 oz. Select varieties. Limit 10.',
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Green Giant Vegetables' } },
+  },
+  {
+    productName: "Campbell's Condensed Soup",
+    upc: '051000012531',
+    category: 'Grocery',
+    price: { regular: 1.69, sale: 1.00, unit: 'each', percentOff: 41 },
+    headline: '$1 Deal — Mmm Mmm Good',
+    description: "Campbell's Cream of Chicken, Tomato or Chicken Noodle 10.5-10.75 oz. Limit 10.",
+    stamps: ['sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?auto=format&fit=crop&w=400&h=400&q=80', altText: "Campbell's Soup" } },
+  },
+  {
+    productName: 'Knorr Pasta & Rice Sides',
+    upc: '041000027858',
+    category: 'Grocery',
+    price: { regular: 1.99, sale: 1.00, unit: 'each', percentOff: 50 },
+    headline: '$1 Deal — Quick & Easy Side Dishes',
+    description: 'Knorr Pasta or Rice Sides 4-5.7 oz. Select varieties. Limit 10.',
+    stamps: ['sale', 'hot'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1551462147-ff29053bfc14?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Knorr Sides' } },
+  },
+  {
+    productName: 'Dove Body Wash 18 oz.',
+    upc: '011111014012',
+    category: 'Health & Beauty',
+    price: { regular: 9.99, sale: 7.99, unit: 'each', percentOff: 20 },
+    headline: 'Feel Beautiful — BOGO 30% Off',
+    description: 'Dove Body Wash 18-20 oz. or Body Scrub 15 oz.',
+    stamps: ['sale', 'bogo'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Dove Body Wash' } },
+  },
+  {
+    productName: 'Oreo & Chips Ahoy! Cookies',
+    upc: '044000030070',
+    category: 'Snacks',
+    price: { regular: 4.99, sale: null, unit: 'each', percentOff: null },
+    headline: 'Buy 2, Get 1 FREE — America\'s Favorites',
+    description: '8-19.5 oz. Select varieties. Quantities less than 2 at regular price.',
+    stamps: ['bogo', 'sale'],
+    images: { product: { url: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=400&h=400&q=80', altText: 'Oreo Cookies' } },
+  },
+]
+
+// Map seed stamp names → StampType enum values
+const STAMP_MAP = { sale: 'SALE', hot: 'HOT_DEAL', bogo: 'BOGO', new: 'NEW', organic: 'ORGANIC', clearance: 'CLEARANCE' }
+
+// Convert raw price { regular, sale, unit, percentOff } → PriceData shape
+function buildPriceData(raw) {
+  if (!raw) return null
+  const adPrice = raw.sale ?? raw.regular
+  const priceType = raw.unit === 'lb' ? 'per_lb' : 'each'
+  const cents = adPrice.toFixed(2).split('.')[1]
+  const priceDisplay = priceType === 'per_lb' ? `$${adPrice.toFixed(2)}/lb` : `$${adPrice.toFixed(2)}`
+  const savingsText = raw.sale && raw.regular > raw.sale
+    ? `Save $${(raw.regular - raw.sale).toFixed(2)}`
+    : undefined
+  return {
+    adPrice,
+    regularPrice: raw.regular,
+    priceType,
+    percentOff: raw.percentOff ?? null,
+    savingsText: savingsText ?? null,
+    priceDisplay,
+  }
+}
+
+async function seed() {
+  console.log(`Seeding ${products.length} products into ad ${AD_ID}...`)
+
+  let inserted = 0
+  for (const p of products) {
+    const id = randomUUID()
+    const feedJson = {
+      productName: p.productName,
+      upc: p.upc,
+      price: buildPriceData(p.price),
+      images: p.images,
+      stamps: p.stamps.map(s => STAMP_MAP[s] ?? s.toUpperCase()),
+      headline: p.headline,
+      description: p.description,
+      disclaimer: '',
+      category: p.category,
+    }
+
+    // Update existing rows (preserving id/foreign keys) or insert new ones
+    const blockId = `block-${p.upc}`
+    const upd = await pool.query(
+      `UPDATE "BlockData" SET "feedJson" = $1, upc = $2 WHERE "blockId" = $3 AND "adId" = $4`,
+      [JSON.stringify(feedJson), p.upc, blockId, AD_ID]
+    )
+    if (upd.rowCount === 0) {
+      await pool.query(
+        `INSERT INTO "BlockData" (id, "blockId", upc, "feedJson", "adId", "importedAt")
+         VALUES ($1, $2, $3, $4, $5, NOW())`,
+        [id, blockId, p.upc, JSON.stringify(feedJson), AD_ID]
+      )
+    }
+    inserted++
+    process.stdout.write(`  [${inserted}/${products.length}] ${p.productName}\n`)
+  }
+
+  console.log(`\n✓ Seeded ${inserted} products successfully.`)
+  await pool.end()
+}
+
+seed().catch(e => {
+  console.error('Seed failed:', e.message)
+  pool.end()
+  process.exit(1)
+})
