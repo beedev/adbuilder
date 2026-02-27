@@ -4,7 +4,7 @@ import { Ad } from '@/types'
 import { useAdStore } from '@/stores/adStore'
 import { useUIStore } from '@/stores/uiStore'
 import { usePriceStore } from '@/stores/priceStore'
-import { Save, Eye, Send, RotateCcw, RotateCw, Store } from 'lucide-react'
+import { Save, Eye, Send, RotateCcw, RotateCw, Store, FileDown } from 'lucide-react'
 
 const REGIONS = ['WEST_COAST', 'MIDWEST', 'EAST_COAST']
 
@@ -19,6 +19,33 @@ export function TopBar({ ad, onSave, onSubmit, isSaving }: Props) {
   const { undo, redo, history, historyIndex, isDirty, lastSaved } = useAdStore()
   const { togglePreview } = useUIStore()
   const { activeRegion, setRegion } = usePriceStore()
+  const [isExporting, setIsExporting] = React.useState(false)
+
+  async function handleExportPdf() {
+    if (isExporting) return
+    setIsExporting(true)
+    try {
+      const res = await fetch(`/api/ads/${ad.id}/export/pdf`, { method: 'POST' })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        alert(body.error || 'PDF export failed. Please try again.')
+        return
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `weekly-ad-${ad.name.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      alert('PDF export failed. Please try again.')
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   const statusColors: Record<string, string> = {
     draft: '#888',
@@ -146,6 +173,28 @@ export function TopBar({ ad, onSave, onSubmit, isSaving }: Props) {
       <div style={{ width: 1, height: 24, backgroundColor: '#e0e0e0' }} />
 
       {/* Actions */}
+      <button
+        onClick={handleExportPdf}
+        disabled={isExporting}
+        title="Download as PDF"
+        style={{
+          padding: '6px 14px',
+          backgroundColor: 'transparent',
+          border: '1px solid #ddd',
+          borderRadius: 6,
+          cursor: isExporting ? 'default' : 'pointer',
+          fontSize: 13,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          color: isExporting ? '#bbb' : '#555',
+          opacity: isExporting ? 0.7 : 1,
+        }}
+      >
+        <FileDown size={15} />
+        {isExporting ? 'Exporting…' : 'Export PDF'}
+      </button>
+
       <button
         onClick={togglePreview}
         style={{
