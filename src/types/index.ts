@@ -23,7 +23,7 @@ export type StampType =
 
 export type StampPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
 
-export type DisplayMode = 'product_image' | 'lifestyle_image' | 'text_only' | 'combo' | 'combo_no_price' | 'price_circle' | 'sale_band' | 'text_overlay'
+export type DisplayMode = 'product_image' | 'lifestyle_image' | 'text_only' | 'combo' | 'combo_no_price' | 'price_circle' | 'sale_band' | 'text_overlay' | 'stamp_overlay'
 
 export interface BlockImage {
   url: string

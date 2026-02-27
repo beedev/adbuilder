@@ -21,7 +21,7 @@ import { SectionNavigator } from '@/components/panels/SectionNavigator'
 import { BlockInspector } from '@/components/panels/BlockInspector'
 import { TopBar } from '@/components/layout/TopBar'
 import { TemplateSelector } from '@/components/templates/TemplateSelector'
-import { BlockData, BlockData as BD, Page, TemplateLayout, TemplateZone } from '@/types'
+import { BlockData, BlockData as BD, Page, StampType, TemplateLayout, TemplateZone } from '@/types'
 import { ChevronLeft, ChevronRight, LayoutTemplate, ZoomIn, ZoomOut } from 'lucide-react'
 
 export default function BuilderPage({ params }: { params: Promise<{ id: string }> }) {
@@ -264,9 +264,43 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
         .catch(console.error)
     }
 
-    // Placing a pre-built component (sale band, etc.)
+    // Placing a pre-built component (sale band, stamp overlay, etc.)
     if (activeData?.type === 'component') {
-      const def = activeData.def as { id: string; label: string; color: string; priceText: string; headline: string }
+      const def = activeData.def as { id: string; label: string; color: string; priceText: string; headline: string; overlayMode?: string; stampType?: string }
+
+      // ── Stamp overlay: small standalone badge, placed at canvas center ──
+      if (def.overlayMode === 'stamp_overlay') {
+        const pageLayout = page.template?.layoutJson as TemplateLayout | undefined
+        const canvasW = pageLayout?.canvas?.width || 800
+        const canvasH = pageLayout?.canvas?.height || 1100
+        const w = 130
+        const h = 130
+        const x = Math.round(canvasW / 2 - w / 2)
+        const y = Math.round(canvasH / 2 - h / 2)
+
+        fetch(`/api/ads/${id}/blocks/create`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ upc: '', blockType: 'overlay', productName: def.label, category: 'Overlays', price: null, priceText: '', headline: def.label }),
+        })
+          .then(r => r.json())
+          .then((newBlock: BD) => {
+            setBlockData(prev => [...prev, newBlock])
+            const clientId = placeBlock(page.id, newBlock.id, null, x, y, w, h)
+            useAdStore.getState().updateBlockOverride(clientId, { displayMode: 'stamp_overlay', stamps: [def.stampType as StampType] })
+            markDirty()
+            fetch(`/api/ads/${id}/blocks`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ pageId: page.id, blockDataId: newBlock.id, zoneId: null, x, y, width: w, height: h, zIndex: 50, overrides: { displayMode: 'stamp_overlay', stamps: [def.stampType] } }),
+            })
+              .then(r => r.json())
+              .then((placed: { id: string }) => { useAdStore.getState().replacePlacedBlockId(clientId, placed.id) })
+              .catch(console.error)
+          })
+          .catch(console.error)
+        return
+      }
       const pageLayout = page.template?.layoutJson as TemplateLayout | undefined
       const pageZones: TemplateZone[] = pageLayout?.zones || []
       const overData = over?.data.current

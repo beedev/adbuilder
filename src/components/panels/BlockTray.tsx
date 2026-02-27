@@ -13,7 +13,20 @@ interface ComponentDef {
   color: string
   priceText: string
   headline: string
+  overlayMode?: 'stamp_overlay'
+  stampType?: string
 }
+
+const STAMP_OVERLAY_COMPONENTS: ComponentDef[] = [
+  { id: 'stamp-sale',    label: 'SALE',             color: '#C8102E', priceText: '', headline: '', overlayMode: 'stamp_overlay', stampType: 'SALE' },
+  { id: 'stamp-bogo',    label: 'BOGO',              color: '#1B5E20', priceText: '', headline: '', overlayMode: 'stamp_overlay', stampType: 'BOGO' },
+  { id: 'stamp-hot',     label: 'HOT DEAL',          color: '#E65100', priceText: '', headline: '', overlayMode: 'stamp_overlay', stampType: 'HOT_DEAL' },
+  { id: 'stamp-pct',     label: '% OFF',             color: '#C8102E', priceText: '', headline: '', overlayMode: 'stamp_overlay', stampType: 'PCT_OFF' },
+  { id: 'stamp-mgr',     label: "MGR'S SPECIAL",     color: '#6A1B9A', priceText: '', headline: '', overlayMode: 'stamp_overlay', stampType: 'MANAGERS_SPECIAL' },
+  { id: 'stamp-digital', label: 'DIGITAL COUPON',    color: '#006064', priceText: '', headline: '', overlayMode: 'stamp_overlay', stampType: 'DIGITAL_COUPON' },
+  { id: 'stamp-limited', label: 'LIMITED TIME',      color: '#BF360C', priceText: '', headline: '', overlayMode: 'stamp_overlay', stampType: 'LIMITED' },
+  { id: 'stamp-new',     label: 'NEW',               color: '#1565C0', priceText: '', headline: '', overlayMode: 'stamp_overlay', stampType: 'NEW' },
+]
 
 const SALE_BAND_COMPONENTS: ComponentDef[] = [
   { id: 'sale-band-red',   label: 'Red Sale Band',   color: '#C8102E', priceText: '$X.XX', headline: 'Special Offer!' },
@@ -68,6 +81,56 @@ function ComponentCard({ def }: { def: ComponentDef }) {
           <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.8)', marginTop: 1 }}>{def.headline}</div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function StampOverlayCard({ def }: { def: ComponentDef }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `component:${def.id}`,
+    data: { type: 'component', def },
+  })
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      style={{
+        cursor: 'grab',
+        opacity: isDragging ? 0.4 : 1,
+        touchAction: 'none',
+        userSelect: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '5px 8px',
+        border: '1px solid #e0e0e0',
+        borderRadius: 6,
+        marginBottom: 4,
+        backgroundColor: '#fff',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+      }}
+    >
+      <div
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: '50%',
+          backgroundColor: def.color,
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.25)',
+          border: '1.5px solid rgba(255,255,255,0.5)',
+        }}
+      >
+        <span style={{ fontSize: 6, fontWeight: 900, color: '#fff', textAlign: 'center', lineHeight: 1.1, letterSpacing: '0.02em' }}>
+          {def.label.split(' ')[0]}
+        </span>
+      </div>
+      <span style={{ fontSize: 11, fontWeight: 600, color: '#333' }}>{def.label}</span>
     </div>
   )
 }
@@ -242,6 +305,24 @@ export function BlockTray({ blockData, placedBlockDataIds, adId, onBlockCreated 
         <Plus size={13} />
         Create Block
       </button>
+
+      {/* Stamp Overlays section */}
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
+          <Layers size={12} color="#555" />
+          <span style={{ fontSize: 11, fontWeight: 600, color: '#555', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Stamp Overlays
+          </span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+          {STAMP_OVERLAY_COMPONENTS.map(def => (
+            <StampOverlayCard key={def.id} def={def} />
+          ))}
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div style={{ borderTop: '1px solid #eee', margin: '2px 0' }} />
 
       {/* Components section */}
       <div>

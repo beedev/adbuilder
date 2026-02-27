@@ -4,7 +4,7 @@ import { PlacedBlock, DisplayMode, StampPosition, StampType } from '@/types'
 import { useAdStore } from '@/stores/adStore'
 import { PriceDisplay } from './PriceDisplay'
 import { PriceCalloutCircle } from './PriceCalloutCircle'
-import { StampBadge } from './StampBadge'
+import { StampBadge, STAMP_CONFIG } from './StampBadge'
 
 interface Props {
   placedBlock: PlacedBlock
@@ -169,6 +169,73 @@ export function BlockRenderer({ placedBlock, scale, isSelected, onSelect, mode =
       />
     )
   })
+
+  // ── Stamp Overlay mode — standalone draggable stamp badge ──────────
+  if (displayMode === 'stamp_overlay') {
+    const stampType = stamps[0] || 'SALE'
+    const config = STAMP_CONFIG[stampType] || STAMP_CONFIG['SALE']
+    const rawText = stampType === 'PCT_OFF' && feed.price?.percentOff
+      ? `${feed.price.percentOff}%\nOFF`
+      : config.text
+    const lines = rawText.split('\n')
+    const badgeD = Math.min(placedBlock.width, placedBlock.height) * scale * 0.85
+    const fontSize = Math.max(7, badgeD * 0.2)
+
+    return (
+      <div
+        ref={blockRootRef}
+        onClick={onSelect}
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: mode === 'edit' ? 'grab' : 'default',
+          userSelect: 'none',
+          outline: isSelected && mode === 'edit' ? '2px solid #1565C0' : 'none',
+          outlineOffset: 2,
+          borderRadius: 4,
+        }}
+      >
+        <div
+          style={{
+            width: badgeD,
+            height: badgeD,
+            borderRadius: '50%',
+            backgroundColor: config.bg,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 3px 12px rgba(0,0,0,0.35)',
+            border: `${Math.max(2, badgeD * 0.04)}px solid rgba(255,255,255,0.55)`,
+            padding: badgeD * 0.06,
+          }}
+        >
+          {lines.map((line, i) => (
+            <span
+              key={i}
+              style={{
+                color: '#fff',
+                fontSize,
+                fontWeight: 900,
+                textTransform: 'uppercase',
+                lineHeight: 1.15,
+                textAlign: 'center',
+                letterSpacing: '0.02em',
+              }}
+            >
+              {line}
+            </span>
+          ))}
+        </div>
+        {isSelected && mode === 'edit' && (
+          <div style={{ position: 'absolute', inset: 0, border: '2px solid #1565C0', borderRadius: 4, pointerEvents: 'none', zIndex: 100 }} />
+        )}
+      </div>
+    )
+  }
 
   // ── Price Circle mode ───────────────────────────────────────────────
   // The price circle is a DRAGGABLE overlay — use handleCirclePointerDown

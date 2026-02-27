@@ -212,6 +212,8 @@ export function SectionNavigator({ sections, selectedPageId, onSelectPage }: Pro
               fontSize: 12,
               marginBottom: 6,
               boxSizing: 'border-box',
+              color: '#111',
+              backgroundColor: '#fff',
             }}
           />
           <div style={{ display: 'flex', gap: 4 }}>

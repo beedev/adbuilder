@@ -2,7 +2,7 @@
 import React from 'react'
 import { StampType, StampPosition } from '@/types'
 
-const STAMP_CONFIG: Record<StampType, { bg: string; text: string; shape: string }> = {
+export const STAMP_CONFIG: Record<StampType, { bg: string; text: string; shape: string }> = {
   SALE: { bg: '#C8102E', text: 'SALE', shape: 'burst' },
   BOGO: { bg: '#1B5E20', text: 'BUY 1\nGET 1 FREE', shape: 'banner' },
   PCT_OFF: { bg: '#C8102E', text: '% OFF', shape: 'circle' },
