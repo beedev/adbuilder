@@ -136,6 +136,7 @@ export function BlockInspector({ placedBlock }: Props) {
 
   if (!feed) return null
 
+  const isStampOnly = (feed as Record<string, unknown>).blockType === 'overlay'
   const isSaleBand = currentMode === 'sale_band'
   const hasFeedPriceText = !!(feed as Record<string, unknown>).priceText
   const hasPrice = !!feed.price || !!feed.upc
@@ -162,18 +163,23 @@ export function BlockInspector({ placedBlock }: Props) {
       {/* ── Product Info (always visible) ── */}
       <div style={{ padding: '10px 12px', backgroundColor: '#fafafa', borderBottom: '1px solid #eee' }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: '#111', marginBottom: 2 }}>
-          {feed.productName}
+          {isStampOnly
+            ? (currentStamps[0]?.replace(/_/g, ' ') || 'Stamp')
+            : feed.productName}
         </div>
         <div style={{ fontSize: 11, color: '#888' }}>
-          UPC: {feed.upc} · {feed.category}
+          {isStampOnly
+            ? 'Standalone stamp element'
+            : `UPC: ${feed.upc} · ${feed.category}`}
         </div>
       </div>
 
       {/* ══════════════════════════════════════════════
           DISPLAY — mode picker, layout, image source
+          (hidden for stamp-only blocks)
           ══════════════════════════════════════════════ */}
-      <AccordionHeader title="Display" open={open.display} onToggle={() => toggle('display')} />
-      {open.display && (
+      {!isStampOnly && <AccordionHeader title="Display" open={open.display} onToggle={() => toggle('display')} />}
+      {!isStampOnly && open.display && (
         <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
           {/* Display Mode */}
@@ -275,10 +281,10 @@ export function BlockInspector({ placedBlock }: Props) {
       )}
 
       {/* ══════════════════════════════════════════════
-          TEXT & COPY — headline, description, disclaimer
+          TEXT & COPY — hidden for stamp-only blocks
           ══════════════════════════════════════════════ */}
-      <AccordionHeader title="Text & Copy" open={open.text} onToggle={() => toggle('text')} />
-      {open.text && (
+      {!isStampOnly && <AccordionHeader title="Text & Copy" open={open.text} onToggle={() => toggle('text')} />}
+      {!isStampOnly && open.text && (
         <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
 
           <div>
@@ -324,10 +330,10 @@ export function BlockInspector({ placedBlock }: Props) {
       )}
 
       {/* ══════════════════════════════════════════════
-          PRICING — sale band price + price circle
+          PRICING — hidden for stamp-only blocks
           ══════════════════════════════════════════════ */}
-      <AccordionHeader title="Pricing" open={open.pricing} onToggle={() => toggle('pricing')} />
-      {open.pricing && (
+      {!isStampOnly && <AccordionHeader title="Pricing" open={open.pricing} onToggle={() => toggle('pricing')} />}
+      {!isStampOnly && open.pricing && (
         <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 14 }}>
 
           {/* Sale Band Price */}
@@ -383,6 +389,46 @@ export function BlockInspector({ placedBlock }: Props) {
                   />
                 </div>
               </div>
+
+              {/* Band color */}
+              {isSaleBand && (
+                <div>
+                  <div style={{ fontSize: 10, color: '#888', marginBottom: 5 }}>Band Color</div>
+                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 6 }}>
+                    {['#C8102E','#1565C0','#2E7D32','#212121','#E65100','#6A1B9A','#F9A825','#0D47A1'].map(c => (
+                      <div
+                        key={c}
+                        onClick={() => updateBlockOverride(placedBlock.id, { backgroundColor: c })}
+                        title={c}
+                        style={{
+                          width: 22, height: 22, borderRadius: 4, backgroundColor: c, cursor: 'pointer',
+                          border: (overrides.backgroundColor as string) === c ? '2px solid #1565C0' : '2px solid transparent',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+                    <input
+                      type="color"
+                      value={(overrides.backgroundColor as string) || '#C8102E'}
+                      onChange={e => updateBlockOverride(placedBlock.id, { backgroundColor: e.target.value })}
+                      style={{ width: 28, height: 28, padding: 1, border: '1px solid #ddd', borderRadius: 4, cursor: 'pointer', flexShrink: 0 }}
+                    />
+                    <input
+                      type="text"
+                      value={(overrides.backgroundColor as string) || ''}
+                      maxLength={7}
+                      placeholder="#C8102E"
+                      onChange={e => {
+                        if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value))
+                          updateBlockOverride(placedBlock.id, { backgroundColor: e.target.value })
+                      }}
+                      style={{ flex: 1, padding: '4px 6px', border: '1px solid #ddd', borderRadius: 4, fontSize: 11, fontFamily: 'monospace', color: '#111' }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

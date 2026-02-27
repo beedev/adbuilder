@@ -21,8 +21,9 @@ interface AdStore {
   setTemplates: (templates: Template[]) => void
 
   // Ad mutations
-  placeBlock: (pageId: string, blockDataId: string, zoneId: string | null, x: number, y: number, width: number, height: number, blockData?: BlockData | null) => string
+  placeBlock: (pageId: string, blockDataId: string, zoneId: string | null, x: number, y: number, width: number, height: number, blockData?: BlockData | null, zIndex?: number) => string
   replacePlacedBlockId: (oldId: string, newId: string) => void
+  updatePlacedBlockData: (placedBlockId: string, newBlockDataId: string, newBlockData: BlockData) => void
   moveBlock: (placedBlockId: string, targetPageId: string, x: number, y: number) => void
   removeBlock: (placedBlockId: string) => void
   updateBlockOverride: (placedBlockId: string, overrides: Partial<PlacedBlockOverrides>) => void
@@ -87,7 +88,7 @@ export const useAdStore = create<AdStore>((set, get) => ({
     set({ isDirty: false, lastSaved: new Date() })
   },
 
-  placeBlock(pageId, blockDataId, zoneId, x, y, width, height, blockData) {
+  placeBlock(pageId, blockDataId, zoneId, x, y, width, height, blockData, zIndex) {
     const clientId = crypto.randomUUID()
     const newBlock: PlacedBlock = {
       id: clientId,
@@ -96,7 +97,7 @@ export const useAdStore = create<AdStore>((set, get) => ({
       blockData: blockData ?? undefined, // optional pre-populated blockData prevents render race
       zoneId,
       x, y, width, height,
-      zIndex: 1,
+      zIndex: zIndex ?? 1,
       overrides: {}
     }
 
@@ -133,6 +134,28 @@ export const useAdStore = create<AdStore>((set, get) => ({
               ...page,
               placedBlocks: page.placedBlocks.map(block =>
                 block.id === oldId ? { ...block, id: newId } : block
+              )
+            }))
+          }))
+        }
+      }
+    })
+  },
+
+  updatePlacedBlockData(placedBlockId, newBlockDataId, newBlockData) {
+    set(state => {
+      if (!state.ad) return state
+      return {
+        ad: {
+          ...state.ad,
+          sections: state.ad.sections.map(section => ({
+            ...section,
+            pages: section.pages.map(page => ({
+              ...page,
+              placedBlocks: page.placedBlocks.map(block =>
+                block.id === placedBlockId
+                  ? { ...block, blockDataId: newBlockDataId, blockData: newBlockData }
+                  : block
               )
             }))
           }))

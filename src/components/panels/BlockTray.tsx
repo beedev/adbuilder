@@ -1,11 +1,12 @@
 'use client'
 import React, { useState } from 'react'
 import { useDraggable } from '@dnd-kit/core'
-import { BlockData } from '@/types'
+import { BlockData, StampType } from '@/types'
 import { usePriceStore } from '@/stores/priceStore'
 import { formatPrice } from '@/lib/priceFormatter'
 import { Search, Package, Plus, ChevronDown, ChevronRight, GripVertical } from 'lucide-react'
 import { BlockCreatorModal } from '@/components/modals/BlockCreatorModal'
+import { STAMP_CONFIG } from '@/components/canvas/StampBadge'
 
 interface ComponentDef {
   id: string
@@ -17,16 +18,16 @@ interface ComponentDef {
   stampType?: string
 }
 
-const STAMP_OVERLAY_COMPONENTS: ComponentDef[] = [
-  { id: 'stamp-sale',    label: 'SALE',           color: '#C8102E', priceText: '', headline: '', overlayMode: 'stamp_overlay', stampType: 'SALE' },
-  { id: 'stamp-bogo',    label: 'BOGO',            color: '#1B5E20', priceText: '', headline: '', overlayMode: 'stamp_overlay', stampType: 'BOGO' },
-  { id: 'stamp-hot',     label: 'HOT DEAL',        color: '#E65100', priceText: '', headline: '', overlayMode: 'stamp_overlay', stampType: 'HOT_DEAL' },
-  { id: 'stamp-pct',     label: '% OFF',           color: '#C8102E', priceText: '', headline: '', overlayMode: 'stamp_overlay', stampType: 'PCT_OFF' },
-  { id: 'stamp-mgr',     label: "MGR'S SPECIAL",   color: '#6A1B9A', priceText: '', headline: '', overlayMode: 'stamp_overlay', stampType: 'MANAGERS_SPECIAL' },
-  { id: 'stamp-digital', label: 'DIGITAL COUPON',  color: '#006064', priceText: '', headline: '', overlayMode: 'stamp_overlay', stampType: 'DIGITAL_COUPON' },
-  { id: 'stamp-limited', label: 'LIMITED TIME',    color: '#BF360C', priceText: '', headline: '', overlayMode: 'stamp_overlay', stampType: 'LIMITED' },
-  { id: 'stamp-new',     label: 'NEW',             color: '#1565C0', priceText: '', headline: '', overlayMode: 'stamp_overlay', stampType: 'NEW' },
-]
+// Derive all stamp overlay components from STAMP_CONFIG so tray stays in sync
+const STAMP_OVERLAY_COMPONENTS: ComponentDef[] = (Object.keys(STAMP_CONFIG) as StampType[]).map(type => ({
+  id: `stamp-${type.toLowerCase().replace(/_/g, '-')}`,
+  label: type.replace(/_/g, ' '),
+  color: STAMP_CONFIG[type].bg,
+  priceText: '',
+  headline: '',
+  overlayMode: 'stamp_overlay' as const,
+  stampType: type,
+}))
 
 const SALE_BAND_COMPONENTS: ComponentDef[] = [
   { id: 'sale-band-red',   label: 'Red Sale Band',   color: '#C8102E', priceText: '$X.XX', headline: 'Special Offer!' },
@@ -132,49 +133,57 @@ function ComponentCard({ def }: { def: ComponentDef }) {
   )
 }
 
-// ── Stamp overlay draggable ──────────────────────────────────────────────────
+// ── Stamp overlay draggable — visual stamp badge matching the inspector picker ─
 function StampOverlayCard({ def }: { def: ComponentDef }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `component:${def.id}`,
     data: { type: 'component', def },
   })
 
+  const cfg = STAMP_CONFIG[def.stampType as StampType]
+  const lines = cfg.text.split('\n')
+  const cfgShape = cfg.shape
+  const borderRadius = (cfgShape === 'circle' || cfgShape === 'burst') ? '50%' : 5
+
   return (
     <div
       ref={setNodeRef}
       {...listeners}
       {...attributes}
+      title={def.label}
       style={{
         cursor: 'grab',
         opacity: isDragging ? 0.4 : 1,
         touchAction: 'none',
         userSelect: 'none',
+        aspectRatio: '1',
+        borderRadius,
+        backgroundColor: def.color,
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
-        gap: 7,
-        padding: '4px 7px',
-        border: '1px solid #e8e8e8',
-        borderRadius: 6,
-        backgroundColor: '#fff',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+        justifyContent: 'center',
+        boxShadow: isDragging
+          ? '0 6px 20px rgba(0,0,0,0.3)'
+          : '0 1px 4px rgba(0,0,0,0.2)',
+        border: '1.5px solid rgba(255,255,255,0.35)',
+        padding: 3,
       }}
     >
-      <div
-        style={{
-          width: 26, height: 26, borderRadius: '50%',
-          backgroundColor: def.color,
-          flexShrink: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.25)',
-          border: '1.5px solid rgba(255,255,255,0.5)',
-        }}
-      >
-        <span style={{ fontSize: 6, fontWeight: 900, color: '#fff', textAlign: 'center', lineHeight: 1.1, letterSpacing: '0.02em' }}>
-          {def.label.split(' ')[0]}
+      {lines.map((line, i) => (
+        <span key={i} style={{
+          color: '#fff',
+          fontSize: 7,
+          fontWeight: 900,
+          textTransform: 'uppercase',
+          lineHeight: 1.15,
+          textAlign: 'center',
+          letterSpacing: '0.02em',
+          pointerEvents: 'none',
+        }}>
+          {line}
         </span>
-      </div>
-      <span style={{ fontSize: 11, fontWeight: 600, color: '#333', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{def.label}</span>
-      <GripVertical size={11} color="#ccc" style={{ flexShrink: 0 }} />
+      ))}
     </div>
   )
 }
@@ -316,25 +325,25 @@ export function BlockTray({ blockData, placedBlockDataIds, adId, onBlockCreated 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
 
-      {/* ── Stamp Overlays ─────────────────────────────────────────────── */}
+      {/* ── Stamps ─────────────────────────────────────────────────────── */}
       <div style={{ borderBottom: '1px solid #f0f0f0', padding: '6px 8px' }}>
         <SectionHeader
-          label="Stamp Overlays"
+          label="Stamps"
           count={STAMP_OVERLAY_COMPONENTS.length}
           open={stampOpen}
           onToggle={() => setStampOpen(p => !p)}
         />
         {stampOpen && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, marginTop: 6 }}>
-            {STAMP_OVERLAY_COMPONENTS.map(def => (
-              <StampOverlayCard key={def.id} def={def} />
-            ))}
-          </div>
-        )}
-        {stampOpen && (
-          <div style={{ fontSize: 9, color: '#bbb', marginTop: 5, textAlign: 'center' }}>
-            Drag onto canvas to place
-          </div>
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5, marginTop: 6 }}>
+              {STAMP_OVERLAY_COMPONENTS.map(def => (
+                <StampOverlayCard key={def.id} def={def} />
+              ))}
+            </div>
+            <div style={{ fontSize: 9, color: '#bbb', marginTop: 6, textAlign: 'center' }}>
+              Drag onto canvas or onto a block
+            </div>
+          </>
         )}
       </div>
 

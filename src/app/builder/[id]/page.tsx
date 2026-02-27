@@ -292,6 +292,24 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
           y = Math.max(0, Math.min(canvasH - h, Math.round(rawY)))
         }
 
+        // Optimistic placement — stamp appears immediately on canvas before API responds
+        const now = new Date().toISOString()
+        const tempId = `__temp_${crypto.randomUUID()}`
+        const tempBlockData: BD = {
+          id: tempId, blockId: tempId, upc: '',
+          feedJson: {
+            blockId: tempId, upc: '', productName: def.label, category: 'Overlays',
+            price: { adPrice: null, priceType: 'each', regularPrice: 0, priceDisplay: '' },
+            images: {}, stamps: [def.stampType as StampType], headline: def.label,
+            locale: 'en-US', validFrom: now, validTo: now,
+          },
+          regionId: null, adId: id as string, importedAt: now,
+        }
+        const clientId = placeBlock(page.id, tempId, null, x, y, w, h, tempBlockData, 50)
+        useAdStore.getState().updateBlockOverride(clientId, { displayMode: 'stamp_overlay', stamps: [def.stampType as StampType] })
+        markDirty()
+
+        // Persist to DB in background, swap temp blockData once real record exists
         fetch(`/api/ads/${id}/blocks/create`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -300,10 +318,7 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
           .then(r => r.json())
           .then((newBlock: BD) => {
             setBlockData(prev => [...prev, newBlock])
-            // Pass newBlock as blockData so BlockRenderer never sees undefined
-            const clientId = placeBlock(page.id, newBlock.id, null, x, y, w, h, newBlock)
-            useAdStore.getState().updateBlockOverride(clientId, { displayMode: 'stamp_overlay', stamps: [def.stampType as StampType] })
-            markDirty()
+            useAdStore.getState().updatePlacedBlockData(clientId, newBlock.id, newBlock)
             fetch(`/api/ads/${id}/blocks`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -316,53 +331,57 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
           .catch(console.error)
         return
       }
-      const pageLayout = page.template?.layoutJson as TemplateLayout | undefined
-      const pageZones: TemplateZone[] = pageLayout?.zones || []
-      const overData = over?.data.current
-      let targetZone = overData?.type === 'zone'
-        ? pageZones.find(z => z.id === overData.zoneId)
-        : null
-      if (!targetZone) {
-        targetZone = pageZones.find(z => !page.placedBlocks.some(b => b.zoneId === z.id)) ?? null
+      // Sale band overlay — free-drop anywhere on canvas (same optimistic pattern as stamps)
+      const pageLayout2 = page.template?.layoutJson as TemplateLayout | undefined
+      const canvasW2 = pageLayout2?.canvas?.width || 800
+      const canvasH2 = pageLayout2?.canvas?.height || 1100
+      const w = 760, h = 80
+      let x = 20
+      let y = Math.round(canvasH2 / 2 - h / 2)
+      const droppedRect2 = active.rect.current.translated
+      const canvasEl2 = document.querySelector(`[data-canvas="${page.id}"]`)
+      if (droppedRect2 && canvasEl2) {
+        const canvasRect2 = canvasEl2.getBoundingClientRect()
+        const rawY2 = (droppedRect2.top - canvasRect2.top) / scale
+        y = Math.max(0, Math.min(canvasH2 - h, Math.round(rawY2)))
+        const rawX2 = (droppedRect2.left - canvasRect2.left) / scale
+        x = Math.max(0, Math.min(canvasW2 - w, Math.round(rawX2)))
       }
-      const zoneId = targetZone?.id ?? null
-      const x = targetZone?.x ?? 20
-      const y = targetZone?.y ?? 20
-      const w = targetZone?.width ?? 760
-      const h = targetZone?.height ?? 80
 
-      // Create the block data via API then place it
+      // Optimistic placement — band appears immediately
+      const now2 = new Date().toISOString()
+      const tempId2 = `__temp_${crypto.randomUUID()}`
+      const tempBlockData2: BD = {
+        id: tempId2, blockId: tempId2, upc: '',
+        feedJson: {
+          blockId: tempId2, upc: '', productName: def.label, category: 'Components',
+          price: { adPrice: null, priceType: 'each', regularPrice: 0, priceDisplay: '' },
+          images: {}, stamps: [], headline: def.headline,
+          locale: 'en-US', validFrom: now2, validTo: now2,
+        },
+        regionId: null, adId: id as string, importedAt: now2,
+      }
+      const clientId2 = placeBlock(page.id, tempId2, null, x, y, w, h, tempBlockData2, 50)
+      useAdStore.getState().updateBlockOverride(clientId2, { displayMode: 'sale_band', backgroundColor: def.color })
+      markDirty()
+
+      // Persist in background
       fetch(`/api/ads/${id}/blocks/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          upc: '',
-          blockType: 'promotional',
-          productName: def.label,
-          category: 'Components',
-          price: null,
-          priceText: def.priceText,
-          headline: def.headline,
-        }),
+        body: JSON.stringify({ upc: '', blockType: 'promotional', productName: def.label, category: 'Components', price: null, priceText: def.priceText, headline: def.headline }),
       })
         .then(r => r.json())
         .then((newBlock: BD) => {
-          // Add to local block data state
           setBlockData(prev => [...prev, newBlock])
-          // Place it on canvas with correct overrides
-          const clientId = placeBlock(page.id, newBlock.id, zoneId, x, y, w, h)
-          useAdStore.getState().updateBlockOverride(clientId, { displayMode: 'sale_band', backgroundColor: def.color })
-          markDirty()
-          // Persist the placement with overrides
+          useAdStore.getState().updatePlacedBlockData(clientId2, newBlock.id, newBlock)
           fetch(`/api/ads/${id}/blocks`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ pageId: page.id, blockDataId: newBlock.id, zoneId, x, y, width: w, height: h, zIndex: 1, overrides: { displayMode: 'sale_band', backgroundColor: def.color } }),
+            body: JSON.stringify({ pageId: page.id, blockDataId: newBlock.id, zoneId: null, x, y, width: w, height: h, zIndex: 50, overrides: { displayMode: 'sale_band', backgroundColor: def.color } }),
           })
             .then(r => r.json())
-            .then((placed: { id: string }) => {
-              useAdStore.getState().replacePlacedBlockId(clientId, placed.id)
-            })
+            .then((placed: { id: string }) => { useAdStore.getState().replacePlacedBlockId(clientId2, placed.id) })
             .catch(console.error)
         })
         .catch(console.error)
