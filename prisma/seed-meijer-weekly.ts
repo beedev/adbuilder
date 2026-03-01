@@ -613,8 +613,8 @@ async function main() {
   })
   console.log('  ✓ Template upserted')
 
-  // 2. Create a new section
-  const section = await prisma.section.create({
+  // 2. Create a new vehicle
+  const vehicle = await prisma.vehicle.create({
     data: {
       adId:       AD_ID,
       name:       'Weekly Deals Feature',
@@ -622,12 +622,12 @@ async function main() {
       themeColor: '#C8102E',
     },
   })
-  console.log(`  ✓ Section created: ${section.id}`)
+  console.log(`  ✓ Vehicle created: ${vehicle.id}`)
 
   // 3. Create the page
   const page = await prisma.page.create({
     data: {
-      sectionId:  section.id,
+      vehicleId:  vehicle.id,
       templateId: TEMPLATE_ID,
       pageType:   'interior',
       position:   0,

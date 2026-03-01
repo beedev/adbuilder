@@ -96,7 +96,7 @@ export function BlockInspector({ placedBlock }: Props) {
 
   const toggle = (key: string) => setOpen(prev => ({ ...prev, [key]: !prev[key] }))
 
-  const page = ad?.sections.flatMap(s => s.pages).find(p => p.id === placedBlock.pageId)
+  const page = ad?.vehicles.flatMap(v => v.pages).find(p => p.id === placedBlock.pageId)
   const pageZones = (page?.template?.layoutJson as TemplateLayout | undefined)?.zones || []
   const zone = pageZones.find(z => z.id === placedBlock.zoneId)
 
@@ -254,6 +254,34 @@ export function BlockInspector({ placedBlock }: Props) {
               </div>
             </div>
           )}
+
+          {/* Custom Image URL override */}
+          <div>
+            <SectionLabel>Custom Image URL</SectionLabel>
+            <input
+              type="url"
+              placeholder="https://..."
+              value={(overrides.imageUrl as string) || ''}
+              onChange={e => updateBlockOverride(placedBlock.id, {
+                imageUrl: e.target.value || undefined
+              })}
+              style={{
+                width: '100%', padding: '6px 8px', border: '1px solid #ddd',
+                borderRadius: 4, fontSize: 12, boxSizing: 'border-box', color: '#111',
+              }}
+            />
+            {(overrides.imageUrl as string) && (
+              <button
+                onClick={() => updateBlockOverride(placedBlock.id, { imageUrl: undefined })}
+                style={{
+                  marginTop: 4, background: 'none', border: 'none',
+                  cursor: 'pointer', fontSize: 11, color: '#aaa', padding: 0,
+                }}
+              >
+                Clear override
+              </button>
+            )}
+          </div>
         </div>
       )}
 

@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { Ad, BlockData, Section, Page, PlacedBlock, PlacedBlockOverrides, Template } from '@/types'
+import { Ad, BlockData, Vehicle, Page, PlacedBlock, PlacedBlockOverrides, Template } from '@/types'
 
 interface Command {
   execute: () => void
@@ -29,10 +29,10 @@ interface AdStore {
   updateBlockOverride: (placedBlockId: string, overrides: Partial<PlacedBlockOverrides>) => void
   resizeBlock: (placedBlockId: string, x: number, y: number, width: number, height: number) => void
 
-  reorderSection: (sectionId: string, newPosition: number) => void
+  reorderVehicle: (vehicleId: string, newPosition: number) => void
   reorderPage: (pageId: string, newPosition: number) => void
-  addSection: (name: string, themeColor?: string) => Promise<void>
-  addPage: (sectionId: string, templateId?: string) => Promise<void>
+  addVehicle: (name: string, themeColor?: string) => Promise<void>
+  addPage: (vehicleId: string, templateId?: string) => Promise<void>
   deletePage: (pageId: string) => Promise<void>
   swapTemplate: (pageId: string, templateId: string) => void
 
@@ -43,7 +43,7 @@ interface AdStore {
 
   // Helpers
   getPage: (pageId: string) => Page | undefined
-  getSection: (sectionId: string) => Section | undefined
+  getVehicle: (vehicleId: string) => Vehicle | undefined
   markDirty: () => void
   markSaved: () => void
 }
@@ -68,16 +68,16 @@ export const useAdStore = create<AdStore>((set, get) => ({
   getPage(pageId) {
     const { ad } = get()
     if (!ad) return undefined
-    for (const section of ad.sections) {
-      const page = section.pages.find(p => p.id === pageId)
+    for (const vehicle of ad.vehicles) {
+      const page = vehicle.pages.find(p => p.id === pageId)
       if (page) return page
     }
     return undefined
   },
 
-  getSection(sectionId) {
+  getVehicle(vehicleId) {
     const { ad } = get()
-    return ad?.sections.find(s => s.id === sectionId)
+    return ad?.vehicles.find(v => v.id === vehicleId)
   },
 
   markDirty() {
@@ -106,9 +106,9 @@ export const useAdStore = create<AdStore>((set, get) => ({
       return {
         ad: {
           ...state.ad,
-          sections: state.ad.sections.map(section => ({
-            ...section,
-            pages: section.pages.map(page =>
+          vehicles: state.ad.vehicles.map(vehicle => ({
+            ...vehicle,
+            pages: vehicle.pages.map(page =>
               page.id === pageId
                 ? { ...page, placedBlocks: [...page.placedBlocks, newBlock] }
                 : page
@@ -128,9 +128,9 @@ export const useAdStore = create<AdStore>((set, get) => ({
       return {
         ad: {
           ...state.ad,
-          sections: state.ad.sections.map(section => ({
-            ...section,
-            pages: section.pages.map(page => ({
+          vehicles: state.ad.vehicles.map(vehicle => ({
+            ...vehicle,
+            pages: vehicle.pages.map(page => ({
               ...page,
               placedBlocks: page.placedBlocks.map(block =>
                 block.id === oldId ? { ...block, id: newId } : block
@@ -148,9 +148,9 @@ export const useAdStore = create<AdStore>((set, get) => ({
       return {
         ad: {
           ...state.ad,
-          sections: state.ad.sections.map(section => ({
-            ...section,
-            pages: section.pages.map(page => ({
+          vehicles: state.ad.vehicles.map(vehicle => ({
+            ...vehicle,
+            pages: vehicle.pages.map(page => ({
               ...page,
               placedBlocks: page.placedBlocks.map(block =>
                 block.id === placedBlockId
@@ -170,9 +170,9 @@ export const useAdStore = create<AdStore>((set, get) => ({
       let movingBlock: PlacedBlock | null = null
 
       // Remove from source
-      const sectionsAfterRemove = state.ad.sections.map(section => ({
-        ...section,
-        pages: section.pages.map(page => {
+      const vehiclesAfterRemove = state.ad.vehicles.map(vehicle => ({
+        ...vehicle,
+        pages: vehicle.pages.map(page => {
           const found = page.placedBlocks.find(b => b.id === placedBlockId)
           if (found) movingBlock = { ...found, pageId: targetPageId, x, y }
           return {
@@ -188,9 +188,9 @@ export const useAdStore = create<AdStore>((set, get) => ({
       return {
         ad: {
           ...state.ad,
-          sections: sectionsAfterRemove.map(section => ({
-            ...section,
-            pages: section.pages.map(page =>
+          vehicles: vehiclesAfterRemove.map(vehicle => ({
+            ...vehicle,
+            pages: vehicle.pages.map(page =>
               page.id === targetPageId
                 ? { ...page, placedBlocks: [...page.placedBlocks, movingBlock!] }
                 : page
@@ -208,9 +208,9 @@ export const useAdStore = create<AdStore>((set, get) => ({
       return {
         ad: {
           ...state.ad,
-          sections: state.ad.sections.map(section => ({
-            ...section,
-            pages: section.pages.map(page => ({
+          vehicles: state.ad.vehicles.map(vehicle => ({
+            ...vehicle,
+            pages: vehicle.pages.map(page => ({
               ...page,
               placedBlocks: page.placedBlocks.filter(b => b.id !== placedBlockId)
             }))
@@ -227,9 +227,9 @@ export const useAdStore = create<AdStore>((set, get) => ({
       return {
         ad: {
           ...state.ad,
-          sections: state.ad.sections.map(section => ({
-            ...section,
-            pages: section.pages.map(page => ({
+          vehicles: state.ad.vehicles.map(vehicle => ({
+            ...vehicle,
+            pages: vehicle.pages.map(page => ({
               ...page,
               placedBlocks: page.placedBlocks.map(block =>
                 block.id === placedBlockId
@@ -250,9 +250,9 @@ export const useAdStore = create<AdStore>((set, get) => ({
       return {
         ad: {
           ...state.ad,
-          sections: state.ad.sections.map(section => ({
-            ...section,
-            pages: section.pages.map(page => ({
+          vehicles: state.ad.vehicles.map(vehicle => ({
+            ...vehicle,
+            pages: vehicle.pages.map(page => ({
               ...page,
               placedBlocks: page.placedBlocks.map(block =>
                 block.id === placedBlockId
@@ -267,16 +267,16 @@ export const useAdStore = create<AdStore>((set, get) => ({
     })
   },
 
-  reorderSection(sectionId, newPosition) {
+  reorderVehicle(vehicleId, newPosition) {
     set(state => {
       if (!state.ad) return state
-      const sections = [...state.ad.sections]
-      const idx = sections.findIndex(s => s.id === sectionId)
+      const vehicles = [...state.ad.vehicles]
+      const idx = vehicles.findIndex(v => v.id === vehicleId)
       if (idx < 0) return state
-      const [moved] = sections.splice(idx, 1)
-      sections.splice(newPosition, 0, moved)
+      const [moved] = vehicles.splice(idx, 1)
+      vehicles.splice(newPosition, 0, moved)
       return {
-        ad: { ...state.ad, sections: sections.map((s, i) => ({ ...s, position: i })) },
+        ad: { ...state.ad, vehicles: vehicles.map((v, i) => ({ ...v, position: i })) },
         isDirty: true
       }
     })
@@ -288,13 +288,13 @@ export const useAdStore = create<AdStore>((set, get) => ({
       return {
         ad: {
           ...state.ad,
-          sections: state.ad.sections.map(section => {
-            const idx = section.pages.findIndex(p => p.id === pageId)
-            if (idx < 0) return section
-            const pages = [...section.pages]
+          vehicles: state.ad.vehicles.map(vehicle => {
+            const idx = vehicle.pages.findIndex(p => p.id === pageId)
+            if (idx < 0) return vehicle
+            const pages = [...vehicle.pages]
             const [moved] = pages.splice(idx, 1)
             pages.splice(newPosition, 0, moved)
-            return { ...section, pages: pages.map((p, i) => ({ ...p, position: i })) }
+            return { ...vehicle, pages: pages.map((p, i) => ({ ...p, position: i })) }
           })
         },
         isDirty: true
@@ -302,39 +302,39 @@ export const useAdStore = create<AdStore>((set, get) => ({
     })
   },
 
-  async addSection(name, themeColor) {
+  async addVehicle(name, themeColor) {
     const { ad } = get()
     if (!ad) return
-    const res = await fetch(`/api/ads/${ad.id}/sections`, {
+    const res = await fetch(`/api/ads/${ad.id}/vehicles`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, themeColor })
     })
-    const section = await res.json()
+    const vehicle = await res.json()
     set(state => ({
       ad: state.ad ? {
         ...state.ad,
-        sections: [...state.ad.sections, { ...section, pages: [] }]
+        vehicles: [...state.ad.vehicles, { ...vehicle, pages: [] }]
       } : null
     }))
   },
 
-  async addPage(sectionId, templateId) {
+  async addPage(vehicleId, templateId) {
     const { ad } = get()
     if (!ad) return
     const res = await fetch(`/api/ads/${ad.id}/pages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sectionId, templateId })
+      body: JSON.stringify({ vehicleId, templateId })
     })
     const page = await res.json()
     set(state => ({
       ad: state.ad ? {
         ...state.ad,
-        sections: state.ad.sections.map(s =>
-          s.id === sectionId
-            ? { ...s, pages: [...s.pages, { ...page, placedBlocks: [] }] }
-            : s
+        vehicles: state.ad.vehicles.map(v =>
+          v.id === vehicleId
+            ? { ...v, pages: [...v.pages, { ...page, placedBlocks: [] }] }
+            : v
         )
       } : null
     }))
@@ -343,16 +343,16 @@ export const useAdStore = create<AdStore>((set, get) => ({
   async deletePage(pageId) {
     const { ad } = get()
     if (!ad) return
-    // Find which section this page belongs to for fallback navigation
+    // Find which vehicle this page belongs to for fallback navigation
     await fetch(`/api/ads/${ad.id}/pages/${pageId}`, { method: 'DELETE' })
     set(state => {
       if (!state.ad) return state
       return {
         ad: {
           ...state.ad,
-          sections: state.ad.sections.map(section => ({
-            ...section,
-            pages: section.pages
+          vehicles: state.ad.vehicles.map(vehicle => ({
+            ...vehicle,
+            pages: vehicle.pages
               .filter(p => p.id !== pageId)
               .map((p, i) => ({ ...p, position: i })),
           })),
@@ -372,9 +372,9 @@ export const useAdStore = create<AdStore>((set, get) => ({
       return {
         ad: {
           ...state.ad,
-          sections: state.ad.sections.map(section => ({
-            ...section,
-            pages: section.pages.map(page =>
+          vehicles: state.ad.vehicles.map(vehicle => ({
+            ...vehicle,
+            pages: vehicle.pages.map(page =>
               page.id === pageId
                 ? { ...page, templateId, template: newTemplate }
                 : page

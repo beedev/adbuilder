@@ -4,12 +4,12 @@ import { prisma } from '@/lib/prisma'
 /**
  * GET /api/ads/[id]/export/blocks
  *
- * Export all placed blocks for an ad, organized by section → page → block.
+ * Export all placed blocks for an ad, organized by vehicle → page → block.
  * Each block includes the full feed data (product info, price, images, text)
  * merged with any designer overrides applied in the builder.
  *
  * Query params:
- *   sectionId  — filter to a specific section (optional)
+ *   vehicleId  — filter to a specific vehicle (optional)
  *   pageId     — filter to a specific page (optional)
  *
  * Response shape:
@@ -18,10 +18,10 @@ import { prisma } from '@/lib/prisma'
  *   adName:    string
  *   validFrom: string
  *   validTo:   string
- *   sections: [
+ *   vehicles: [
  *     {
- *       sectionId:   string
- *       sectionName: string
+ *       vehicleId:   string
+ *       vehicleName: string
  *       position:    number
  *       pages: [
  *         {
@@ -74,14 +74,14 @@ export async function GET(
 ) {
   const { id: adId } = await params
   const { searchParams } = new URL(req.url)
-  const filterSectionId = searchParams.get('sectionId')
+  const filterVehicleId = searchParams.get('vehicleId')
   const filterPageId = searchParams.get('pageId')
 
   const ad = await prisma.ad.findUnique({
     where: { id: adId },
     include: {
-      sections: {
-        where: filterSectionId ? { id: filterSectionId } : undefined,
+      vehicles: {
+        where: filterVehicleId ? { id: filterVehicleId } : undefined,
         orderBy: { position: 'asc' },
         include: {
           pages: {
@@ -101,11 +101,11 @@ export async function GET(
 
   if (!ad) return NextResponse.json({ error: 'Ad not found' }, { status: 404 })
 
-  const sections = ad.sections.map((section) => ({
-    sectionId: section.id,
-    sectionName: section.name,
-    position: section.position,
-    pages: section.pages.map((page) => ({
+  const vehicles = ad.vehicles.map((vehicle) => ({
+    vehicleId: vehicle.id,
+    vehicleName: vehicle.name,
+    position: vehicle.position,
+    pages: vehicle.pages.map((page) => ({
       pageId: page.id,
       pageType: page.pageType,
       position: page.position,
@@ -206,10 +206,10 @@ export async function GET(
     validTo: ad.validTo,
     status: ad.status,
     exportedAt: new Date().toISOString(),
-    totalBlocks: sections.reduce(
-      (sum, s) => sum + s.pages.reduce((ps, p) => ps + p.blocks.length, 0),
+    totalBlocks: vehicles.reduce(
+      (sum, v) => sum + v.pages.reduce((ps, p) => ps + p.blocks.length, 0),
       0
     ),
-    sections,
+    vehicles,
   })
 }

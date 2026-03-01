@@ -4,8 +4,7 @@ import { useDraggable } from '@dnd-kit/core'
 import { BlockData, StampType } from '@/types'
 import { usePriceStore } from '@/stores/priceStore'
 import { formatPrice } from '@/lib/priceFormatter'
-import { Search, Package, Plus, ChevronDown, ChevronRight, GripVertical } from 'lucide-react'
-import { BlockCreatorModal } from '@/components/modals/BlockCreatorModal'
+import { Search, Package, ChevronDown, ChevronRight, GripVertical } from 'lucide-react'
 import { STAMP_CONFIG } from '@/components/canvas/StampBadge'
 
 interface ComponentDef {
@@ -282,10 +281,9 @@ interface Props {
   onBlockCreated: (newBlock: BlockData) => void
 }
 
-export function BlockTray({ blockData, placedBlockDataIds, adId, onBlockCreated }: Props) {
+export function BlockTray({ blockData, placedBlockDataIds, adId: _adId, onBlockCreated: _onBlockCreated }: Props) {
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('All')
-  const [showCreator, setShowCreator] = useState(false)
 
   // Section collapse state
   const [overlaysOpen, setOverlaysOpen] = useState(true)
@@ -312,14 +310,6 @@ export function BlockTray({ blockData, placedBlockDataIds, adId, onBlockCreated 
 
   const placed   = filtered.filter(b =>  placedBlockDataIds.has(b.id))
   const unplaced = filtered.filter(b => !placedBlockDataIds.has(b.id))
-
-  const addBtnStyle: React.CSSProperties = {
-    display: 'flex', alignItems: 'center', gap: 3,
-    padding: '2px 7px', fontSize: 10, fontWeight: 700,
-    border: '1px solid #C8102E', borderRadius: 4,
-    backgroundColor: '#fff', color: '#C8102E',
-    cursor: 'pointer', flexShrink: 0,
-  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -371,12 +361,6 @@ export function BlockTray({ blockData, placedBlockDataIds, adId, onBlockCreated 
           count={productBlocks.length}
           open={blocksOpen}
           onToggle={() => setBlocksOpen(p => !p)}
-          action={
-            <button onClick={() => setShowCreator(true)} style={addBtnStyle}>
-              <Plus size={10} />
-              Add
-            </button>
-          }
         />
 
         {blocksOpen && (
@@ -452,14 +436,6 @@ export function BlockTray({ blockData, placedBlockDataIds, adId, onBlockCreated 
         )}
       </div>
 
-      {/* Block Creator Modal */}
-      {showCreator && (
-        <BlockCreatorModal
-          adId={adId}
-          onCreated={onBlockCreated}
-          onClose={() => setShowCreator(false)}
-        />
-      )}
     </div>
   )
 }

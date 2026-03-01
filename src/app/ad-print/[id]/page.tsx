@@ -8,7 +8,7 @@ export default async function AdPrintPage({ params }: { params: Promise<{ id: st
   const ad = await prisma.ad.findUnique({
     where: { id },
     include: {
-      sections: {
+      vehicles: {
         orderBy: { position: 'asc' },
         include: {
           pages: {

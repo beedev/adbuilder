@@ -83,6 +83,7 @@ export interface PlacedBlockOverrides {
   stampTexts?: Partial<Record<StampType, string>>           // per-stamp label text override
   backgroundColor?: string
   activeImage?: 'product' | 'lifestyle'
+  imageUrl?: string
   richTextJson?: Record<string, unknown>
   // Layout of image vs price+text within the block
   // image-top (default): image top half, price+text below
@@ -176,7 +177,7 @@ export type PageType = 'front_cover' | 'back_cover' | 'interior' | 'centerfold'
 
 export interface Page {
   id: string
-  sectionId: string
+  vehicleId: string
   templateId?: string | null
   template?: Template | null
   pageType: PageType
@@ -184,7 +185,7 @@ export interface Page {
   placedBlocks: PlacedBlock[]
 }
 
-export interface Section {
+export interface Vehicle {
   id: string
   adId: string
   name: string
@@ -204,17 +205,17 @@ export interface Ad {
   createdById: string
   createdAt: string
   updatedAt: string
-  sections: Section[]
+  vehicles: Vehicle[]
 }
 
 // ── UI ────────────────────────────────────────────────────────────────
 
 export interface DragState {
-  type: 'from-tray' | 'reposition' | 'reorder-page' | 'reorder-section'
+  type: 'from-tray' | 'reposition' | 'reorder-page' | 'reorder-vehicle'
   blockDataId?: string
   placedBlockId?: string
   sourcePageId?: string
-  sourceSectionId?: string
+  sourceVehicleId?: string
 }
 
 export interface Comment {

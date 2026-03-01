@@ -17,18 +17,21 @@ import { useUIStore } from '@/stores/uiStore'
 import { usePriceStore } from '@/stores/priceStore'
 import { PageCanvas } from '@/components/canvas/PageCanvas'
 import { BlockTray } from '@/components/panels/BlockTray'
-import { SectionNavigator } from '@/components/panels/SectionNavigator'
+import { VehicleNavigator } from '@/components/panels/VehicleNavigator'
 import { BlockInspector } from '@/components/panels/BlockInspector'
 import { TopBar } from '@/components/layout/TopBar'
 import { TemplateSelector } from '@/components/templates/TemplateSelector'
 import { BlockData, BlockData as BD, Page, StampType, TemplateLayout, TemplateZone } from '@/types'
-import { ChevronLeft, ChevronRight, LayoutTemplate, ZoomIn, ZoomOut } from 'lucide-react'
+import { ChevronLeft, ChevronRight, LayoutTemplate, ZoomIn, ZoomOut, RefreshCw } from 'lucide-react'
+import { formatDistanceToNow } from 'date-fns'
 
 export default function BuilderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const [blockData, setBlockData] = useState<BlockData[]>([])
   const [isSaving, setIsSaving] = useState(false)
   const [dragOverlay, setDragOverlay] = useState<{ blockData: BD; w: number; h: number; isStamp?: boolean; stampColor?: string } | null>(null)
+  const [lastPolled, setLastPolled] = useState<Date | null>(null)
+  const [isPolling, setIsPolling] = useState(false)
 
   const { ad, setAd, setTemplates, markSaved, isDirty, placeBlock, moveBlock, markDirty } = useAdStore()
   const {
@@ -62,7 +65,7 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
       usePriceStore.getState().importFeed(blockDataArr)
 
       // Auto-select first page
-      const firstPage = adData.sections?.[0]?.pages?.[0]
+      const firstPage = adData.vehicles?.[0]?.pages?.[0]
       if (firstPage) selectPage(firstPage.id)
     }
     load()
@@ -77,6 +80,29 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
     return () => clearInterval(interval)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDirty])
+
+  // REQ-F: Poll blockdata every 20s to keep prices/images fresh
+  useEffect(() => {
+    const poll = async () => {
+      setIsPolling(true)
+      try {
+        const res = await fetch(`/api/ads/${id}/blockdata`)
+        if (res.ok) {
+          const fresh = await res.json()
+          setBlockData(fresh)
+          usePriceStore.getState().importFeed(fresh)
+          setLastPolled(new Date())
+        }
+      } catch {
+        // silent — stale data is acceptable
+      } finally {
+        setIsPolling(false)
+      }
+    }
+    const interval = setInterval(poll, 20000)
+    return () => clearInterval(interval)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -106,8 +132,8 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
     if (!ad || isSaving) return
     setIsSaving(true)
     try {
-      for (const section of ad.sections) {
-        for (const page of section.pages) {
+      for (const vehicle of ad.vehicles) {
+        for (const page of vehicle.pages) {
           for (const pb of page.placedBlocks) {
             await fetch(`/api/ads/${id}/blocks/${pb.id}`, {
               method: 'PATCH',
@@ -155,7 +181,7 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
     // Read fresh store state — currentPage not in scope yet (before guard)
     const adInner = useAdStore.getState().ad
     if (!adInner) return
-    const pages = adInner.sections.flatMap(s => s.pages)
+    const pages = adInner.vehicles.flatMap(v => v.pages)
     const uiState = useUIStore.getState()
     const page = uiState.selectedPageId
       ? pages.find(p => p.id === uiState.selectedPageId)
@@ -212,7 +238,7 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
     // Read fresh store state
     const adInner = useAdStore.getState().ad
     if (!adInner) return
-    const pages = adInner.sections.flatMap(s => s.pages)
+    const pages = adInner.vehicles.flatMap(v => v.pages)
     const uiState = useUIStore.getState()
     const page = uiState.selectedPageId
       ? pages.find(p => p.id === uiState.selectedPageId)
@@ -408,8 +434,8 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
   // Derived values (post-guard, no hooks below this line)
   const effectiveScale = zoom
 
-  const allPages = ad.sections.flatMap(s =>
-    s.pages.slice().sort((a, b) => a.position - b.position)
+  const allPages = ad.vehicles.flatMap(v =>
+    v.pages.slice().sort((a, b) => a.position - b.position)
   )
   const currentPage: Page | undefined = selectedPageId
     ? allPages.find(p => p.id === selectedPageId)
@@ -452,7 +478,7 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
         collisionDetection={collisionDetection}
       >
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-          {/* LEFT: Section Navigator */}
+          {/* LEFT: Vehicle Navigator */}
           <div
             style={{
               width: 200,
@@ -464,8 +490,8 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
               flexShrink: 0,
             }}
           >
-            <SectionNavigator
-              sections={ad.sections}
+            <VehicleNavigator
+              vehicles={ad.vehicles}
               selectedPageId={selectedPageId}
               onSelectPage={selectPage}
             />
@@ -512,6 +538,34 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
               </button>
 
               <div style={{ flex: 1 }} />
+
+              {/* REQ-F: Data freshness badge */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  fontSize: 10,
+                  color: isPolling ? '#1565C0' : '#aaa',
+                  padding: '2px 6px',
+                  borderRadius: 4,
+                  backgroundColor: isPolling ? '#e3f2fd' : 'transparent',
+                  transition: 'background-color 0.3s',
+                }}
+                title={lastPolled ? `Last refreshed ${formatDistanceToNow(lastPolled, { addSuffix: true })}` : 'Block data auto-refreshes every 20s'}
+              >
+                <RefreshCw
+                  size={10}
+                  style={{
+                    animation: isPolling ? 'spin 1s linear infinite' : 'none',
+                  }}
+                />
+                {isPolling
+                  ? 'Refreshing…'
+                  : lastPolled
+                  ? `Updated ${formatDistanceToNow(lastPolled, { addSuffix: true })}`
+                  : 'Live data'}
+              </div>
 
               {/* Zoom controls */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
