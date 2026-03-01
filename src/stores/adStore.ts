@@ -344,7 +344,8 @@ export const useAdStore = create<AdStore>((set, get) => ({
     const { ad } = get()
     if (!ad) return
     // Find which vehicle this page belongs to for fallback navigation
-    await fetch(`/api/ads/${ad.id}/pages/${pageId}`, { method: 'DELETE' })
+    const res = await fetch(`/api/ads/${ad.id}/pages/${pageId}`, { method: 'DELETE' })
+    if (!res.ok) return // API failure — do not mutate local state
     set(state => {
       if (!state.ad) return state
       return {

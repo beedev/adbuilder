@@ -63,6 +63,7 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
       setTemplates(templateData)
       setBlockData(blockDataArr)
       usePriceStore.getState().importFeed(blockDataArr)
+      setLastPolled(new Date()) // mark initial load as first successful data fetch
 
       // Auto-select first page
       const firstPage = adData.vehicles?.[0]?.pages?.[0]

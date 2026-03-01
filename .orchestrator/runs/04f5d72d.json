@@ -1,0 +1,16 @@
+{
+  "task": null,
+  "cwd": "/Users/bharath/Desktop/meijer/weekly-ad-builder",
+  "run_id": "04f5d72d",
+  "status": "created",
+  "git_branch": null,
+  "base_branch": "main",
+  "pr_url": null,
+  "developer": null,
+  "model": "claude-opus-4-6",
+  "created_at": "2026-02-27T15:06:51.502003+00:00",
+  "updated_at": "2026-02-27T15:06:51.502314+00:00",
+  "stages": [],
+  "cost_summary": null,
+  "notes": []
+}

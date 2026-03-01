@@ -1,0 +1,24 @@
+{
+  "task": "Add ability to save the weekly ad as pdf",
+  "cwd": "/Users/bharath/Desktop/meijer/weekly-ad-builder",
+  "run_id": "c98da0a3",
+  "status": "failed",
+  "git_branch": "orchestrator/add-ability-to-save-the-weekly-ad-as-pdf-20260227-2038",
+  "base_branch": "main",
+  "pr_url": null,
+  "developer": null,
+  "model": "claude-opus-4-6",
+  "created_at": "2026-02-27T15:08:25.406181+00:00",
+  "updated_at": "2026-02-27T15:08:26.801725+00:00",
+  "stages": [],
+  "cost_summary": {
+    "stages": [],
+    "total_input_tokens": 0,
+    "total_output_tokens": 0,
+    "total_cost_usd": 0
+  },
+  "notes": [
+    "Branch created: orchestrator/add-ability-to-save-the-weekly-ad-as-pdf-20260227-2038",
+    "Fatal error: TypeError: \"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""
+  ]
+}

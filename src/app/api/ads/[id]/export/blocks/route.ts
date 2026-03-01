@@ -128,6 +128,7 @@ export async function GET(
           (displayMode === 'lifestyle_image' ? 'lifestyle' : 'product')
         const stamps =
           (overrides.stamps as string[]) || (feed.stamps as string[]) || []
+        const imageUrlOverride = (overrides.imageUrl as string) || undefined
 
         const feedImages = (feed.images as Record<string, unknown>) || {}
 
@@ -179,9 +180,10 @@ export async function GET(
               }
             : {}),
 
-          // Images
+          // Images — imageUrlOverride takes priority over feed images
           images: {
             active: activeImage,
+            imageUrlOverride: imageUrlOverride || null,
             product: (feedImages.product as { url: string; altText: string } | null) || null,
             lifestyle:
               (feedImages.lifestyle as { url: string; altText: string } | null) || null,
