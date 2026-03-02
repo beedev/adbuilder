@@ -62,6 +62,15 @@ export interface BlockData {
   importedAt: string
 }
 
+export interface WorkbenchLayer {
+  url: string
+  opacity: number    // 0–1
+  scale: number      // %, 10–300
+  rotation: number   // degrees, -180 to 180
+  x: number          // % of block width
+  y: number          // % of block height
+}
+
 export interface PlacedBlockOverrides {
   headline?: string
   description?: string
@@ -79,12 +88,17 @@ export interface PlacedBlockOverrides {
   stampPositions?: Partial<Record<StampType, StampPosition | { x: number; y: number }>>
   stampSizes?: Partial<Record<StampType, number>>           // per-stamp size in design units
   stampColors?: Partial<Record<StampType, string>>          // per-stamp background color override
-  stampShapes?: Partial<Record<StampType, 'circle' | 'square' | 'pill'>>  // per-stamp shape override
+  stampShapes?: Partial<Record<StampType, 'circle' | 'square' | 'pill' | 'ring'>>  // per-stamp shape override
   stampTexts?: Partial<Record<StampType, string>>           // per-stamp label text override
   backgroundColor?: string
   activeImage?: 'product' | 'lifestyle'
   imageUrl?: string
   richTextJson?: Record<string, unknown>
+  // Image Workbench — source layers saved for re-editing
+  foregroundLayers?: WorkbenchLayer[]
+  workbenchBgColor?: string   // canvas background color, default #ffffff
+  // Ring stamp border style (applies when stampShapes[stamp] === 'ring')
+  stampRingStyle?: Partial<Record<StampType, 'solid' | 'dashed' | 'dotted' | 'double'>>
   // Layout of image vs price+text within the block
   // image-top (default): image top half, price+text below
   // image-bottom: price+text top, image below

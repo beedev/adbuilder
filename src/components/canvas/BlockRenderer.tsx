@@ -186,10 +186,11 @@ export function BlockRenderer({ placedBlock, scale, isSelected, onSelect, mode =
     <div style={{ position: 'absolute', inset: 0, border: '2px solid #1565C0', borderRadius: 4, pointerEvents: 'none', zIndex: 100 }} />
   ) : null
 
-  const stampSizeMap   = (overrides.stampSizes  as Partial<Record<StampType, number>>)  || {}
-  const stampColorMap  = (overrides.stampColors as Partial<Record<StampType, string>>)  || {}
-  const stampShapeMap  = (overrides.stampShapes as Partial<Record<StampType, 'circle' | 'square' | 'pill'>>) || {}
-  const stampTextMap   = (overrides.stampTexts  as Partial<Record<StampType, string>>)  || {}
+  const stampSizeMap      = (overrides.stampSizes     as Partial<Record<StampType, number>>)  || {}
+  const stampColorMap     = (overrides.stampColors    as Partial<Record<StampType, string>>)  || {}
+  const stampShapeMap     = (overrides.stampShapes    as Partial<Record<StampType, 'circle' | 'square' | 'pill' | 'ring'>>) || {}
+  const stampTextMap      = (overrides.stampTexts     as Partial<Record<StampType, string>>)  || {}
+  const stampRingStyleMap = (overrides.stampRingStyle as Partial<Record<StampType, 'solid' | 'dashed' | 'dotted' | 'double'>>) || {}
 
   const stampBadges = stamps.slice(0, 2).map((stamp, i) => {
     const defaultPositions: StampPosition[] = ['top-left', 'top-right']
@@ -205,6 +206,7 @@ export function BlockRenderer({ placedBlock, scale, isSelected, onSelect, mode =
         size={stampSize}
         colorOverride={stampColorMap[stamp]}
         shapeOverride={stampShapeMap[stamp]}
+        ringStyle={stampRingStyleMap[stamp]}
         textOverride={stampTextMap[stamp]}
         onPointerDown={mode === 'edit' ? handleStampPointerDown(stamp) : undefined}
         onResizePointerDown={mode === 'edit' ? handleStampResizePointerDown(stamp, designSize) : undefined}

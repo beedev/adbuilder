@@ -28,6 +28,7 @@ const SHAPE_OPTIONS = [
   { value: 'circle' as const, label: 'Circle', radius: '50%'   },
   { value: 'square' as const, label: 'Square', radius: '5px'   },
   { value: 'pill'   as const, label: 'Pill',   radius: '999px' },
+  { value: 'ring'   as const, label: 'Ring',   radius: '50%'   },
 ]
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
@@ -101,13 +102,15 @@ export function OverlayInspector({ placedBlock }: Props) {
 
   const stamps        = (overrides.stamps     as StampType[]) || []
   const stampType     = stamps[0] || 'SALE'
-  const stampColorMap = (overrides.stampColors as Partial<Record<StampType, string>>)                      || {}
-  const stampShapeMap = (overrides.stampShapes as Partial<Record<StampType, 'circle' | 'square' | 'pill'>>) || {}
-  const stampTextMap  = (overrides.stampTexts  as Partial<Record<StampType, string>>)                      || {}
-  const stampSizeMap  = (overrides.stampSizes  as Partial<Record<StampType, number>>)                      || {}
+  const stampColorMap    = (overrides.stampColors    as Partial<Record<StampType, string>>)                                   || {}
+  const stampShapeMap    = (overrides.stampShapes    as Partial<Record<StampType, 'circle' | 'square' | 'pill' | 'ring'>>) || {}
+  const stampTextMap     = (overrides.stampTexts     as Partial<Record<StampType, string>>)                                  || {}
+  const stampSizeMap     = (overrides.stampSizes     as Partial<Record<StampType, number>>)                                  || {}
+  const stampRingStyleMap = (overrides.stampRingStyle as Partial<Record<StampType, 'solid' | 'dashed' | 'dotted' | 'double'>>) || {}
 
-  const stampColor = stampColorMap[stampType] ?? STAMP_CONFIG[stampType]?.bg ?? '#C8102E'
-  const stampShape = stampShapeMap[stampType]
+  const stampColor     = stampColorMap[stampType] ?? STAMP_CONFIG[stampType]?.bg ?? '#C8102E'
+  const stampShape     = stampShapeMap[stampType]
+  const stampRingStyle = stampRingStyleMap[stampType] ?? 'solid'
   const stampText  = stampTextMap[stampType]  ?? STAMP_CONFIG[stampType]?.text ?? stampType
   const stampSize  = stampSizeMap[stampType]  ?? 48
   const bandColor  = (overrides.backgroundColor as string) || '#C8102E'
@@ -124,14 +127,19 @@ export function OverlayInspector({ placedBlock }: Props) {
     updateBlockOverride(placedBlock.id, { stampColors: next as Partial<Record<StampType, string>> })
   }
 
-  const setStampShape = (shape: 'circle' | 'square' | 'pill') => {
+  const setStampShape = (shape: 'circle' | 'square' | 'pill' | 'ring') => {
     updateBlockOverride(placedBlock.id, {
       stampShapes: {
         ...stampShapeMap,
         [stampType]: stampShape === shape ? undefined : shape,
-      } as Partial<Record<StampType, 'circle' | 'square' | 'pill'>>,
+      } as Partial<Record<StampType, 'circle' | 'square' | 'pill' | 'ring'>>,
     })
   }
+
+  const setStampRingStyle = (style: 'solid' | 'dashed' | 'dotted' | 'double') =>
+    updateBlockOverride(placedBlock.id, {
+      stampRingStyle: { ...stampRingStyleMap, [stampType]: style } as Partial<Record<StampType, 'solid' | 'dashed' | 'dotted' | 'double'>>,
+    })
 
   const setStampText = (text: string) =>
     updateBlockOverride(placedBlock.id, { stampTexts: { ...stampTextMap, [stampType]: text } as Partial<Record<StampType, string>> })
@@ -247,7 +255,8 @@ export function OverlayInspector({ placedBlock }: Props) {
                   >
                     <div style={{
                       width: 16, height: 16,
-                      backgroundColor: isActive ? '#1565C0' : '#bbb',
+                      backgroundColor: opt.value === 'ring' ? 'transparent' : (isActive ? '#1565C0' : '#bbb'),
+                      border: opt.value === 'ring' ? `2px solid ${isActive ? '#1565C0' : '#bbb'}` : 'none',
                       borderRadius: opt.radius, flexShrink: 0,
                     }} />
                     <span style={{
@@ -255,6 +264,49 @@ export function OverlayInspector({ placedBlock }: Props) {
                       color: isActive ? '#1565C0' : '#777',
                       fontWeight: isActive ? 700 : 400,
                     }}>
+                      {opt.label}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── RING STYLE (only when ring shape) ────────────────── */}
+        {isStamp && stampShape === 'ring' && (
+          <div>
+            <FieldLabel>Ring Style</FieldLabel>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {([
+                { value: 'solid'  as const, label: 'Solid',  preview: 'solid'  },
+                { value: 'dashed' as const, label: 'Dashed', preview: 'dashed' },
+                { value: 'dotted' as const, label: 'Dotted', preview: 'dotted' },
+                { value: 'double' as const, label: 'Double', preview: 'double' },
+              ]).map(opt => {
+                const isActive = stampRingStyle === opt.value
+                return (
+                  <button
+                    key={opt.value}
+                    onClick={() => setStampRingStyle(opt.value)}
+                    style={{
+                      flex: 1, padding: '5px 4px',
+                      border: `1px solid ${isActive ? '#1565C0' : '#ddd'}`,
+                      borderRadius: 4,
+                      backgroundColor: isActive ? '#e3f2fd' : '#fff',
+                      cursor: 'pointer',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                    }}
+                  >
+                    {/* Mini ring preview */}
+                    <div style={{
+                      width: 18, height: 18, borderRadius: '50%',
+                      border: `2.5px ${opt.preview === 'double' ? 'solid' : opt.preview} ${isActive ? '#1565C0' : '#999'}`,
+                      outline: opt.preview === 'double' ? `1.5px solid ${isActive ? '#1565C0' : '#999'}` : 'none',
+                      outlineOffset: opt.preview === 'double' ? 3 : 0,
+                      backgroundColor: 'transparent',
+                    }} />
+                    <span style={{ fontSize: 9, color: isActive ? '#1565C0' : '#777', fontWeight: isActive ? 700 : 400 }}>
                       {opt.label}
                     </span>
                   </button>

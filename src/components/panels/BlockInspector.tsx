@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 import { PlacedBlock, DisplayMode, TemplateLayout } from '@/types'
 import { useAdStore } from '@/stores/adStore'
 import { useUIStore } from '@/stores/uiStore'
-import { Trash2, Maximize2, ChevronDown } from 'lucide-react'
+import { Trash2, Maximize2, ChevronDown, Layers } from 'lucide-react'
 import { OverlayInspector } from './OverlayInspector'
 import { ImagePickerGallery } from './ImagePickerGallery'
 
@@ -86,7 +86,7 @@ interface Props { placedBlock: PlacedBlock }
 
 export function BlockInspector({ placedBlock }: Props) {
   const { updateBlockOverride, removeBlock, resizeBlock, ad } = useAdStore()
-  const { selectBlock } = useUIStore()
+  const { selectBlock, openWorkbench } = useUIStore()
   const [customHex, setCustomHex] = useState('')
   const [open, setOpen] = useState<Record<string, boolean>>({
     display: true,
@@ -300,6 +300,20 @@ export function BlockInspector({ placedBlock }: Props) {
             onSelect={url => updateBlockOverride(placedBlock.id, { imageUrl: url })}
             onClear={() => updateBlockOverride(placedBlock.id, { imageUrl: undefined })}
           />
+          <button
+            onClick={() => openWorkbench(placedBlock.id)}
+            style={{
+              marginTop: 10, width: '100%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+              padding: '7px 10px',
+              border: '1.5px solid #1565C0', borderRadius: 6,
+              backgroundColor: '#fff', color: '#1565C0',
+              fontSize: 11, fontWeight: 600, cursor: 'pointer',
+            }}
+          >
+            <Layers size={13} />
+            Image Workbench
+          </button>
         </div>
       )}
 

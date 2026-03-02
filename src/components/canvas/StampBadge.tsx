@@ -39,7 +39,8 @@ interface Props {
   pct?: number
   size?: number
   colorOverride?: string
-  shapeOverride?: 'circle' | 'square' | 'pill'
+  shapeOverride?: 'circle' | 'square' | 'pill' | 'ring'
+  ringStyle?: 'solid' | 'dashed' | 'dotted' | 'double'
   textOverride?: string
   onPointerDown?: (e: React.PointerEvent) => void
   onResizePointerDown?: (e: React.PointerEvent) => void
@@ -53,6 +54,7 @@ export function StampBadge({
   size = 52,
   colorOverride,
   shapeOverride,
+  ringStyle = 'solid',
   textOverride,
   onPointerDown,
   onResizePointerDown,
@@ -64,8 +66,11 @@ export function StampBadge({
   const text = textOverride ?? (type === 'PCT_OFF' && pct ? `${pct}%\nOFF` : config.text)
   const lines = text.split('\n')
 
+  const isRing = shapeOverride === 'ring'
+  const ringColor = colorOverride ?? config.bg
+
   const borderRadius = shapeOverride
-    ? shapeOverride === 'circle' ? '50%'
+    ? (shapeOverride === 'circle' || shapeOverride === 'ring') ? '50%'
     : shapeOverride === 'pill' ? 999
     : 8   // 'square'
     : (config.shape === 'circle' || config.shape === 'burst' ? '50%' : 4)
@@ -86,15 +91,19 @@ export function StampBadge({
         width: size,
         height: size,
         borderRadius,
-        backgroundColor: colorOverride ?? config.bg,
+        backgroundColor: isRing ? 'transparent' : (colorOverride ?? config.bg),
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         padding: 2,
         zIndex: 20,
-        boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
-        border: '2px solid rgba(255,255,255,0.6)',
+        boxShadow: isRing ? 'none' : '0 2px 6px rgba(0,0,0,0.4)',
+        border: isRing
+          ? `3px ${ringStyle === 'double' ? 'solid' : ringStyle} ${ringColor}`
+          : '2px solid rgba(255,255,255,0.6)',
+        outline: (isRing && ringStyle === 'double') ? `2px solid ${ringColor}` : 'none',
+        outlineOffset: (isRing && ringStyle === 'double') ? 4 : 0,
         cursor: onPointerDown ? 'move' : 'default',
       }}
     >
@@ -102,7 +111,7 @@ export function StampBadge({
         <span
           key={i}
           style={{
-            color: '#fff',
+            color: isRing ? ringColor : '#fff',
             fontSize: Math.max(6, Math.round(size * 0.17)),
             fontWeight: 900,
             textTransform: 'uppercase',

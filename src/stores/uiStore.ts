@@ -9,6 +9,8 @@ interface UIStore {
   showTemplateSelector: boolean
   templateSelectorPageId: string | null
   showPreview: boolean
+  workbenchOpen: boolean
+  workbenchBlockId: string | null
 
   selectBlock: (id: string | null) => void
   selectPage: (id: string | null) => void
@@ -18,6 +20,8 @@ interface UIStore {
   openTemplateSelector: (pageId: string) => void
   closeTemplateSelector: () => void
   togglePreview: () => void
+  openWorkbench: (blockId: string) => void
+  closeWorkbench: () => void
 }
 
 export const useUIStore = create<UIStore>((set) => ({
@@ -29,6 +33,8 @@ export const useUIStore = create<UIStore>((set) => ({
   showTemplateSelector: false,
   templateSelectorPageId: null,
   showPreview: false,
+  workbenchOpen: false,
+  workbenchBlockId: null,
 
   selectBlock(id) {
     set({ selectedBlockId: id, activePanel: id ? 'inspector' : 'tray' })
@@ -60,5 +66,13 @@ export const useUIStore = create<UIStore>((set) => ({
 
   setActivePanel(panel) {
     set({ activePanel: panel })
-  }
+  },
+
+  openWorkbench(blockId) {
+    set({ workbenchOpen: true, workbenchBlockId: blockId })
+  },
+
+  closeWorkbench() {
+    set({ workbenchOpen: false, workbenchBlockId: null })
+  },
 }))

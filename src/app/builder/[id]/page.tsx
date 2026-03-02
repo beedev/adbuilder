@@ -21,6 +21,7 @@ import { VehicleNavigator } from '@/components/panels/VehicleNavigator'
 import { BlockInspector } from '@/components/panels/BlockInspector'
 import { TopBar } from '@/components/layout/TopBar'
 import { TemplateSelector } from '@/components/templates/TemplateSelector'
+import { ImageWorkbench } from '@/components/panels/ImageWorkbench'
 import { BlockData, BlockData as BD, Page, StampType, TemplateLayout, TemplateZone } from '@/types'
 import { ChevronLeft, ChevronRight, LayoutTemplate, ZoomIn, ZoomOut, RefreshCw } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
@@ -45,6 +46,9 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
     zoom,
     setZoom,
     activePanel,
+    workbenchOpen,
+    workbenchBlockId,
+    closeWorkbench,
   } = useUIStore()
 
   // Load ad
@@ -782,6 +786,11 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
       {/* Template selector modal */}
       {showTemplateSelector && templateSelectorPageId && (
         <TemplateSelector pageId={templateSelectorPageId} />
+      )}
+
+      {/* Image Workbench slide-over */}
+      {workbenchOpen && workbenchBlockId && (
+        <ImageWorkbench blockId={workbenchBlockId} onClose={closeWorkbench} />
       )}
 
       {/* Preview modal — renders the current page exactly as it will appear, no edit handles */}
