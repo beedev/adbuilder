@@ -422,24 +422,24 @@ async function main() {
       })
   console.log(`📐 Template: ${template.name} (${template.id})`)
 
-  // 3. Find or create "Meijer Weekly Ad" section
-  let section = await prisma.section.findFirst({
+  // 3. Find or create "Meijer Weekly Ad" vehicle
+  let vehicle = await prisma.vehicle.findFirst({
     where: { adId: AD_ID, name: 'Meijer Weekly Ad' },
     include: { pages: true },
   })
-  if (!section) {
-    const sectionCount = await prisma.section.count({ where: { adId: AD_ID } })
-    section = await prisma.section.create({
-      data: { adId: AD_ID, name: 'Meijer Weekly Ad', position: sectionCount, themeColor: '#C8102E' },
+  if (!vehicle) {
+    const vehicleCount = await prisma.vehicle.count({ where: { adId: AD_ID } })
+    vehicle = await prisma.vehicle.create({
+      data: { adId: AD_ID, name: 'Meijer Weekly Ad', position: vehicleCount, themeColor: '#C8102E' },
       include: { pages: true },
     }) as any
-    console.log(`📁 Created section: ${section!.name}`)
+    console.log(`📁 Created vehicle: ${vehicle!.name}`)
   } else {
-    console.log(`📁 Found section: ${section.name}`)
+    console.log(`📁 Found vehicle: ${vehicle.name}`)
   }
 
   // 4. Find or create the page (always clear placed blocks to start fresh)
-  let page = (section as any).pages?.[0] as { id: string } | undefined
+  let page = (vehicle as any).pages?.[0] as { id: string } | undefined
   if (page) {
     await prisma.placedBlock.deleteMany({ where: { pageId: page.id } })
     await prisma.page.update({ where: { id: page.id }, data: { templateId: template.id } })
@@ -447,7 +447,7 @@ async function main() {
   } else {
     page = await prisma.page.create({
       data: {
-        sectionId: section!.id,
+        vehicleId: vehicle!.id,
         templateId: template.id,
         pageType: 'front_cover',
         position: 0,

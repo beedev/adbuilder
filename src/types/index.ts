@@ -62,6 +62,15 @@ export interface BlockData {
   importedAt: string
 }
 
+export interface WorkbenchLayer {
+  url: string
+  opacity: number    // 0–1
+  scale: number      // %, 10–300
+  rotation: number   // degrees, -180 to 180
+  x: number          // % of block width
+  y: number          // % of block height
+}
+
 export interface PlacedBlockOverrides {
   headline?: string
   description?: string
@@ -79,11 +88,21 @@ export interface PlacedBlockOverrides {
   stampPositions?: Partial<Record<StampType, StampPosition | { x: number; y: number }>>
   stampSizes?: Partial<Record<StampType, number>>           // per-stamp size in design units
   stampColors?: Partial<Record<StampType, string>>          // per-stamp background color override
-  stampShapes?: Partial<Record<StampType, 'circle' | 'square' | 'pill'>>  // per-stamp shape override
+  stampShapes?: Partial<Record<StampType, 'circle' | 'square' | 'pill' | 'ring'>>  // per-stamp shape override
   stampTexts?: Partial<Record<StampType, string>>           // per-stamp label text override
   backgroundColor?: string
   activeImage?: 'product' | 'lifestyle'
+  imageUrl?: string
   richTextJson?: Record<string, unknown>
+  // Image Workbench — source layers saved for re-editing
+  foregroundLayers?: WorkbenchLayer[]
+  workbenchBgColor?: string    // canvas background color, default #ffffff
+  workbenchBgUrl?: string      // source background image URL (not the baked composite)
+  workbenchBgScale?: number    // % multiplier on cover-fit scale, default 100
+  workbenchBgRotation?: number // degrees, default 0
+  workbenchBgOpacity?: number  // 0–100, default 100
+  // Ring stamp border style (applies when stampShapes[stamp] === 'ring')
+  stampRingStyle?: Partial<Record<StampType, 'solid' | 'dashed' | 'dotted' | 'double'>>
   // Layout of image vs price+text within the block
   // image-top (default): image top half, price+text below
   // image-bottom: price+text top, image below
@@ -176,7 +195,7 @@ export type PageType = 'front_cover' | 'back_cover' | 'interior' | 'centerfold'
 
 export interface Page {
   id: string
-  sectionId: string
+  vehicleId: string
   templateId?: string | null
   template?: Template | null
   pageType: PageType
@@ -184,7 +203,7 @@ export interface Page {
   placedBlocks: PlacedBlock[]
 }
 
-export interface Section {
+export interface Vehicle {
   id: string
   adId: string
   name: string
@@ -204,17 +223,17 @@ export interface Ad {
   createdById: string
   createdAt: string
   updatedAt: string
-  sections: Section[]
+  vehicles: Vehicle[]
 }
 
 // ── UI ────────────────────────────────────────────────────────────────
 
 export interface DragState {
-  type: 'from-tray' | 'reposition' | 'reorder-page' | 'reorder-section'
+  type: 'from-tray' | 'reposition' | 'reorder-page' | 'reorder-vehicle'
   blockDataId?: string
   placedBlockId?: string
   sourcePageId?: string
-  sourceSectionId?: string
+  sourceVehicleId?: string
 }
 
 export interface Comment {

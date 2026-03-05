@@ -17,9 +17,10 @@ export function OverlayRenderer({ placedBlock, scale, isSelected, onSelect, mode
   const feed        = placedBlock.blockData?.feedJson
   const displayMode = overrides.displayMode as string
 
-  const stampColorMap = (overrides.stampColors as Partial<Record<StampType, string>>)                      || {}
-  const stampShapeMap = (overrides.stampShapes as Partial<Record<StampType, 'circle' | 'square' | 'pill'>>) || {}
-  const stampTextMap  = (overrides.stampTexts  as Partial<Record<StampType, string>>)                      || {}
+  const stampColorMap     = (overrides.stampColors    as Partial<Record<StampType, string>>)                                   || {}
+  const stampShapeMap     = (overrides.stampShapes    as Partial<Record<StampType, 'circle' | 'square' | 'pill' | 'ring'>>) || {}
+  const stampTextMap      = (overrides.stampTexts     as Partial<Record<StampType, string>>)                                  || {}
+  const stampRingStyleMap = (overrides.stampRingStyle as Partial<Record<StampType, 'solid' | 'dashed' | 'dotted' | 'double'>>) || {}
 
   const selectionRing = isSelected && mode === 'edit' ? (
     <div style={{
@@ -35,8 +36,9 @@ export function OverlayRenderer({ placedBlock, scale, isSelected, onSelect, mode
     const stampType = stamps[0] || 'SALE'
     const config    = STAMP_CONFIG[stampType] || STAMP_CONFIG['SALE']
 
-    const stampBgColor = stampColorMap[stampType] ?? config.bg
-    const stampShape   = stampShapeMap[stampType]
+    const stampBgColor  = stampColorMap[stampType] ?? config.bg
+    const stampShape    = stampShapeMap[stampType]
+    const ringStyle     = stampRingStyleMap[stampType] ?? 'solid'
     const stampText    = stampTextMap[stampType] ?? (
       stampType === 'PCT_OFF' && feed?.price?.percentOff
         ? `${feed.price.percentOff}%\nOFF`
@@ -46,7 +48,9 @@ export function OverlayRenderer({ placedBlock, scale, isSelected, onSelect, mode
     const badgeD   = Math.min(placedBlock.width, placedBlock.height) * scale * 0.85
     const fontSize = Math.max(7, badgeD * 0.2)
 
-    const stampRadius = stampShape === 'circle' ? '50%'
+    const isRing = stampShape === 'ring'
+
+    const stampRadius = (stampShape === 'circle' || stampShape === 'ring') ? '50%'
       : stampShape === 'pill'   ? 999
       : stampShape === 'square' ? Math.max(4, badgeD * 0.06)
       : (config.shape === 'circle' || config.shape === 'burst') ? '50%'
@@ -66,16 +70,20 @@ export function OverlayRenderer({ placedBlock, scale, isSelected, onSelect, mode
       >
         <div style={{
           width: badgeD, height: badgeD, borderRadius: stampRadius,
-          backgroundColor: stampBgColor,
+          backgroundColor: isRing ? 'transparent' : stampBgColor,
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 3px 12px rgba(0,0,0,0.35)',
-          border: `${Math.max(2, badgeD * 0.04)}px solid rgba(255,255,255,0.55)`,
+          boxShadow: isRing ? 'none' : '0 3px 12px rgba(0,0,0,0.35)',
+          border: isRing
+            ? `${Math.max(2, badgeD * 0.05)}px ${ringStyle === 'double' ? 'solid' : ringStyle} ${stampBgColor}`
+            : `${Math.max(2, badgeD * 0.04)}px solid rgba(255,255,255,0.55)`,
+          outline: (isRing && ringStyle === 'double') ? `${Math.max(2, badgeD * 0.03)}px solid ${stampBgColor}` : 'none',
+          outlineOffset: (isRing && ringStyle === 'double') ? Math.max(3, badgeD * 0.05) : 0,
           padding: badgeD * 0.06,
         }}>
           {lines.map((line, i) => (
             <span key={i} style={{
-              color: '#fff', fontSize, fontWeight: 900,
+              color: isRing ? stampBgColor : '#fff', fontSize, fontWeight: 900,
               textTransform: 'uppercase', lineHeight: 1.15,
               textAlign: 'center', letterSpacing: '0.02em',
             }}>

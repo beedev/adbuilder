@@ -245,7 +245,7 @@ export default function TemplateBuilder({ initialTemplate }: Props) {
         throw new Error(data.error ?? 'Save failed')
       }
 
-      router.push('/')
+      router.push('/templates')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'An error occurred')
       setSaving(false)

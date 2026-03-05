@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 export async function GET() {
   const ads = await prisma.ad.findMany({
     include: {
-      sections: {
+      vehicles: {
         include: {
           pages: {
             include: {
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       createdById
     },
     include: {
-      sections: {
+      vehicles: {
         include: {
           pages: {
             include: {

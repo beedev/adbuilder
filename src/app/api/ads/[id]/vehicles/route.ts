@@ -5,8 +5,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { id: adId } = await params
   const body = await req.json()
 
-  const count = await prisma.section.count({ where: { adId } })
-  const section = await prisma.section.create({
+  const count = await prisma.vehicle.count({ where: { adId } })
+  const vehicle = await prisma.vehicle.create({
     data: {
       adId,
       name: body.name,
@@ -15,17 +15,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     },
     include: { pages: true }
   })
-  return NextResponse.json(section, { status: 201 })
+  return NextResponse.json(vehicle, { status: 201 })
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: adId } = await params
   const body = await req.json()
 
-  // Bulk reorder sections
+  // Bulk reorder vehicles
   await Promise.all(
-    (body.sections as { id: string; position: number }[]).map((s) =>
-      prisma.section.update({ where: { id: s.id, adId }, data: { position: s.position } })
+    (body.vehicles as { id: string; position: number }[]).map((v) =>
+      prisma.vehicle.update({ where: { id: v.id, adId }, data: { position: v.position } })
     )
   )
   return NextResponse.json({ success: true })

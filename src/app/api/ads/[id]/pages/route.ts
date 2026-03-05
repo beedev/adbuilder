@@ -5,10 +5,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { id: _adId } = await params
   const body = await req.json()
 
-  const count = await prisma.page.count({ where: { sectionId: body.sectionId } })
+  const count = await prisma.page.count({ where: { vehicleId: body.vehicleId } })
   const page = await prisma.page.create({
     data: {
-      sectionId: body.sectionId,
+      vehicleId: body.vehicleId,
       templateId: body.templateId,
       pageType: body.pageType || 'interior',
       position: count

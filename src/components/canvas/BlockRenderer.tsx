@@ -33,7 +33,7 @@ export function BlockRenderer({ placedBlock, scale, isSelected, onSelect, mode =
       const x = Math.max(5, Math.min(95, ((ev.clientX - rect.left) / rect.width) * 100))
       const y = Math.max(5, Math.min(95, ((ev.clientY - rect.top) / rect.height) * 100))
       const store = useAdStore.getState()
-      const pb = store.ad?.sections.flatMap(s => s.pages).flatMap(p => p.placedBlocks).find(b => b.id === placedBlock.id)
+      const pb = store.ad?.vehicles.flatMap(v => v.pages).flatMap(p => p.placedBlocks).find(b => b.id === placedBlock.id)
       const existing = (pb?.overrides?.stampPositions as Record<string, unknown>) || {}
       store.updateBlockOverride(placedBlock.id, { stampPositions: { ...existing, [stamp]: { x, y } } })
     }
@@ -59,7 +59,7 @@ export function BlockRenderer({ placedBlock, scale, isSelected, onSelect, mode =
       const delta = ((ev.clientX - startX) + (ev.clientY - startY)) / 2 / scale
       const newSize = Math.round(Math.max(20, Math.min(140, startDesignSize + delta)))
       const store = useAdStore.getState()
-      const pb = store.ad?.sections.flatMap(s => s.pages).flatMap(p => p.placedBlocks).find(b => b.id === placedBlock.id)
+      const pb = store.ad?.vehicles.flatMap(v => v.pages).flatMap(p => p.placedBlocks).find(b => b.id === placedBlock.id)
       const existing = (pb?.overrides?.stampSizes as Partial<Record<StampType, number>>) || {}
       store.updateBlockOverride(placedBlock.id, { stampSizes: { ...existing, [stamp]: newSize } })
     }
@@ -112,12 +112,16 @@ export function BlockRenderer({ placedBlock, scale, isSelected, onSelect, mode =
 
   const lifestyleImg = feed.images?.lifestyle
   const productImg = feed.images?.product
-  const activeImage =
+  const overrideImageUrl = (overrides.imageUrl as string) || undefined
+  const activeImageRaw =
     displayMode === 'lifestyle_image' || displayMode === 'text_overlay'
       ? lifestyleImg ?? productImg
       : (overrides.activeImage as string) === 'lifestyle'
       ? lifestyleImg
       : productImg
+  const activeImage = overrideImageUrl
+    ? { url: overrideImageUrl, altText: activeImageRaw?.altText || '' }
+    : activeImageRaw
 
   const hasPrice = !!feed.price || !!feed.upc
   const imageOnly = displayMode === 'product_image' || displayMode === 'lifestyle_image'
@@ -182,10 +186,11 @@ export function BlockRenderer({ placedBlock, scale, isSelected, onSelect, mode =
     <div style={{ position: 'absolute', inset: 0, border: '2px solid #1565C0', borderRadius: 4, pointerEvents: 'none', zIndex: 100 }} />
   ) : null
 
-  const stampSizeMap   = (overrides.stampSizes  as Partial<Record<StampType, number>>)  || {}
-  const stampColorMap  = (overrides.stampColors as Partial<Record<StampType, string>>)  || {}
-  const stampShapeMap  = (overrides.stampShapes as Partial<Record<StampType, 'circle' | 'square' | 'pill'>>) || {}
-  const stampTextMap   = (overrides.stampTexts  as Partial<Record<StampType, string>>)  || {}
+  const stampSizeMap      = (overrides.stampSizes     as Partial<Record<StampType, number>>)  || {}
+  const stampColorMap     = (overrides.stampColors    as Partial<Record<StampType, string>>)  || {}
+  const stampShapeMap     = (overrides.stampShapes    as Partial<Record<StampType, 'circle' | 'square' | 'pill' | 'ring'>>) || {}
+  const stampTextMap      = (overrides.stampTexts     as Partial<Record<StampType, string>>)  || {}
+  const stampRingStyleMap = (overrides.stampRingStyle as Partial<Record<StampType, 'solid' | 'dashed' | 'dotted' | 'double'>>) || {}
 
   const stampBadges = stamps.slice(0, 2).map((stamp, i) => {
     const defaultPositions: StampPosition[] = ['top-left', 'top-right']
@@ -201,6 +206,7 @@ export function BlockRenderer({ placedBlock, scale, isSelected, onSelect, mode =
         size={stampSize}
         colorOverride={stampColorMap[stamp]}
         shapeOverride={stampShapeMap[stamp]}
+        ringStyle={stampRingStyleMap[stamp]}
         textOverride={stampTextMap[stamp]}
         onPointerDown={mode === 'edit' ? handleStampPointerDown(stamp) : undefined}
         onResizePointerDown={mode === 'edit' ? handleStampResizePointerDown(stamp, designSize) : undefined}
@@ -453,8 +459,8 @@ export function BlockRenderer({ placedBlock, scale, isSelected, onSelect, mode =
             minHeight: 0,
           }}
         >
-          {displayMode === 'lifestyle_image' && lifestyleImg ? (
-            <img src={lifestyleImg.url} alt={lifestyleImg.altText || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
+          {displayMode === 'lifestyle_image' && (overrideImageUrl ? activeImage : lifestyleImg) ? (
+            <img src={(overrideImageUrl ? activeImage : lifestyleImg)!.url} alt={(overrideImageUrl ? activeImage : lifestyleImg)!.altText || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
           ) : activeImage ? (
             <img
               src={activeImage.url}

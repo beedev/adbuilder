@@ -60,13 +60,13 @@ export default function ReviewPage({ params }: { params: Promise<{ id: string }>
       setComments(commentArr)
       usePriceStore.getState().importFeed(blockArr)
 
-      const first = adData.sections?.[0]?.pages?.[0]
+      const first = adData.vehicles?.[0]?.pages?.[0]
       if (first) setSelectedPageId(first.id)
     }
     load()
   }, [id])
 
-  const allPages = ad?.sections?.flatMap(s => s.pages.sort((a, b) => a.position - b.position)) || []
+  const allPages = ad?.vehicles?.flatMap(v => v.pages.sort((a, b) => a.position - b.position)) || []
   const currentPage = allPages.find(p => p.id === selectedPageId)
   const currentIdx = allPages.findIndex(p => p.id === selectedPageId)
 
@@ -176,15 +176,15 @@ export default function ReviewPage({ params }: { params: Promise<{ id: string }>
       </header>
 
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-        {/* Section navigator */}
+        {/* Vehicle navigator */}
         <div style={{ width: 180, backgroundColor: '#fff', borderRight: '1px solid #e0e0e0', overflowY: 'auto', flexShrink: 0, padding: 8 }}>
-          {ad.sections.map(section => (
-            <div key={section.id} style={{ marginBottom: 8 }}>
+          {ad.vehicles.map(vehicle => (
+            <div key={vehicle.id} style={{ marginBottom: 8 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '4px 4px', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: section.themeColor || '#999' }} />
-                {section.name}
+                <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: vehicle.themeColor || '#999' }} />
+                {vehicle.name}
               </div>
-              {section.pages.sort((a, b) => a.position - b.position).map((page: Page) => {
+              {vehicle.pages.sort((a, b) => a.position - b.position).map((page: Page) => {
                 const hasComments = comments.some(c => c.pageId === page.id)
                 return (
                   <button

@@ -7,7 +7,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   const ad = await prisma.ad.findUnique({
     where: { id },
     include: {
-      sections: {
+      vehicles: {
         include: {
           pages: {
             include: {

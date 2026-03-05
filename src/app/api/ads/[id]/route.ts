@@ -6,7 +6,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const ad = await prisma.ad.findUnique({
     where: { id },
     include: {
-      sections: {
+      vehicles: {
         include: {
           pages: {
             include: {
@@ -39,7 +39,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ...(body.validTo && { validTo: new Date(body.validTo) }),
     },
     include: {
-      sections: {
+      vehicles: {
         include: {
           pages: {
             include: {

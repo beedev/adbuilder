@@ -146,7 +146,7 @@ export default function DashboardPage() {
             {ads.map(ad => {
               const statusStyle = STATUS_COLORS[ad.status] || STATUS_COLORS.draft
               const pageCount =
-                ad.sections?.reduce((acc, s) => acc + s.pages.length, 0) || 0
+                ad.vehicles?.reduce((acc, v) => acc + v.pages.length, 0) || 0
               return (
                 <div
                   key={ad.id}
@@ -218,7 +218,7 @@ export default function DashboardPage() {
 
                   <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
                     <div style={{ fontSize: 12, color: '#666' }}>
-                      <strong>{ad.sections?.length || 0}</strong> sections
+                      <strong>{ad.vehicles?.length || 0}</strong> vehicles
                     </div>
                     <div style={{ fontSize: 12, color: '#666' }}>
                       <strong>{pageCount}</strong> pages

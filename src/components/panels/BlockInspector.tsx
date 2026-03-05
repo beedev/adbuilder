@@ -3,8 +3,9 @@ import React, { useState } from 'react'
 import { PlacedBlock, DisplayMode, TemplateLayout } from '@/types'
 import { useAdStore } from '@/stores/adStore'
 import { useUIStore } from '@/stores/uiStore'
-import { Trash2, Maximize2, ChevronDown } from 'lucide-react'
+import { Trash2, Maximize2, ChevronDown, Layers } from 'lucide-react'
 import { OverlayInspector } from './OverlayInspector'
+import { ImagePickerGallery } from './ImagePickerGallery'
 
 const DISPLAY_MODES: { value: DisplayMode; label: string; desc: string }[] = [
   { value: 'product_image',   label: 'Product Image',           desc: 'Image only' },
@@ -85,10 +86,11 @@ interface Props { placedBlock: PlacedBlock }
 
 export function BlockInspector({ placedBlock }: Props) {
   const { updateBlockOverride, removeBlock, resizeBlock, ad } = useAdStore()
-  const { selectBlock } = useUIStore()
+  const { selectBlock, openWorkbench } = useUIStore()
   const [customHex, setCustomHex] = useState('')
   const [open, setOpen] = useState<Record<string, boolean>>({
     display: true,
+    images: true,
     text: true,
     pricing: true,
     style: false,
@@ -96,7 +98,7 @@ export function BlockInspector({ placedBlock }: Props) {
 
   const toggle = (key: string) => setOpen(prev => ({ ...prev, [key]: !prev[key] }))
 
-  const page = ad?.sections.flatMap(s => s.pages).find(p => p.id === placedBlock.pageId)
+  const page = ad?.vehicles.flatMap(v => v.pages).find(p => p.id === placedBlock.pageId)
   const pageZones = (page?.template?.layoutJson as TemplateLayout | undefined)?.zones || []
   const zone = pageZones.find(z => z.id === placedBlock.zoneId)
 
@@ -254,6 +256,64 @@ export function BlockInspector({ placedBlock }: Props) {
               </div>
             </div>
           )}
+
+          {/* Custom Image URL (manual paste fallback) */}
+          <div>
+            <SectionLabel>Custom URL</SectionLabel>
+            <input
+              type="url"
+              placeholder="https://… (or pick from Images tab below)"
+              value={(overrides.imageUrl as string) || ''}
+              onChange={e => updateBlockOverride(placedBlock.id, {
+                imageUrl: e.target.value || undefined
+              })}
+              style={{
+                width: '100%', padding: '6px 8px', border: '1px solid #ddd',
+                borderRadius: 4, fontSize: 11, boxSizing: 'border-box', color: '#111',
+              }}
+            />
+            {(overrides.imageUrl as string) && (
+              <button
+                onClick={() => updateBlockOverride(placedBlock.id, { imageUrl: undefined })}
+                style={{
+                  marginTop: 3, background: 'none', border: 'none',
+                  cursor: 'pointer', fontSize: 10, color: '#aaa', padding: 0,
+                  textDecoration: 'underline',
+                }}
+              >
+                Clear override
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════
+          IMAGES — visual gallery from Open Food Facts
+          ══════════════════════════════════════════════ */}
+      <AccordionHeader title="Product Images" open={open.images} onToggle={() => toggle('images')} />
+      {open.images && (
+        <div style={{ padding: '10px 12px' }}>
+          <ImagePickerGallery
+            productName={String(feed.productName || '')}
+            currentImageUrl={(overrides.imageUrl as string) || undefined}
+            onSelect={url => updateBlockOverride(placedBlock.id, { imageUrl: url })}
+            onClear={() => updateBlockOverride(placedBlock.id, { imageUrl: undefined })}
+          />
+          <button
+            onClick={() => openWorkbench(placedBlock.id)}
+            style={{
+              marginTop: 10, width: '100%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+              padding: '7px 10px',
+              border: '1.5px solid #1565C0', borderRadius: 6,
+              backgroundColor: '#fff', color: '#1565C0',
+              fontSize: 11, fontWeight: 600, cursor: 'pointer',
+            }}
+          >
+            <Layers size={13} />
+            Image Workbench
+          </button>
         </div>
       )}
 

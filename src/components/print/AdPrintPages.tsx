@@ -12,8 +12,8 @@ interface Props {
 }
 
 export function AdPrintPages({ ad }: Props) {
-  const allPages = ad.sections.flatMap(s =>
-    [...s.pages].sort((a, b) => a.position - b.position)
+  const allPages = ad.vehicles.flatMap(v =>
+    [...v.pages].sort((a, b) => a.position - b.position)
   )
 
   const [ready, setReady] = useState(false)

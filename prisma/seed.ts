@@ -382,8 +382,8 @@ async function main() {
     }
   })
 
-  // Create sample sections
-  const produceSection = await prisma.section.create({
+  // Create sample vehicles
+  const produceVehicle = await prisma.vehicle.create({
     data: {
       adId: sampleAd.id,
       name: 'Produce',
@@ -394,14 +394,14 @@ async function main() {
 
   await prisma.page.create({
     data: {
-      sectionId: produceSection.id,
+      vehicleId: produceVehicle.id,
       templateId: 'Editorial Hero',
       pageType: 'interior',
       position: 0
     }
   })
 
-  const meatSection = await prisma.section.create({
+  const meatVehicle = await prisma.vehicle.create({
     data: {
       adId: sampleAd.id,
       name: 'Meat & Seafood',
@@ -412,7 +412,7 @@ async function main() {
 
   await prisma.page.create({
     data: {
-      sectionId: meatSection.id,
+      vehicleId: meatVehicle.id,
       templateId: 'Banner + Cascade',
       pageType: 'interior',
       position: 0
