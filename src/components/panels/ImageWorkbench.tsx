@@ -62,9 +62,12 @@ export function ImageWorkbench({ blockId, onClose }: Props) {
       ?.productName as string | undefined ?? ''
 
   // ── State ────────────────────────────────────────────────────
-  const [bgUrl, setBgUrl]     = useState<string | null>(block?.overrides.imageUrl ?? null)
-  const [bgColor, setBgColor] = useState<string>(block?.overrides.workbenchBgColor ?? '#ffffff')
-  const [layers, setLayers]   = useState<WorkbenchLayer[]>(block?.overrides.foregroundLayers ?? [])
+  const [bgUrl, setBgUrl]         = useState<string | null>(block?.overrides.workbenchBgUrl ?? null)
+  const [bgColor, setBgColor]     = useState<string>(block?.overrides.workbenchBgColor ?? '#ffffff')
+  const [bgScale, setBgScale]     = useState<number>(block?.overrides.workbenchBgScale ?? 100)
+  const [bgRotation, setBgRotation] = useState<number>(block?.overrides.workbenchBgRotation ?? 0)
+  const [bgOpacity, setBgOpacity] = useState<number>(block?.overrides.workbenchBgOpacity ?? 100)
+  const [layers, setLayers]       = useState<WorkbenchLayer[]>(block?.overrides.foregroundLayers ?? [])
   const [rendering, setRendering] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
 
@@ -117,13 +120,20 @@ export function ImageWorkbench({ blockId, onClose }: Props) {
     ctx.fillStyle = bgColor
     ctx.fillRect(0, 0, PREVIEW_W, PREVIEW_H)
 
-    // Background image — cover fill
+    // Background image — centered with transform controls
     if (bgUrl) {
       try {
         const img = await loadImg(bgUrl)
-        const s = Math.max(PREVIEW_W / img.naturalWidth, PREVIEW_H / img.naturalHeight)
-        const w = img.naturalWidth * s, h = img.naturalHeight * s
-        ctx.drawImage(img, (PREVIEW_W - w) / 2, (PREVIEW_H - h) / 2, w, h)
+        const coverScale = Math.max(PREVIEW_W / img.naturalWidth, PREVIEW_H / img.naturalHeight)
+        const s = coverScale * (bgScale / 100)
+        const w = img.naturalWidth * s
+        const h = img.naturalHeight * s
+        ctx.save()
+        ctx.globalAlpha = bgOpacity / 100
+        ctx.translate(PREVIEW_W / 2, PREVIEW_H / 2)
+        ctx.rotate((bgRotation * Math.PI) / 180)
+        ctx.drawImage(img, -w / 2, -h / 2, w, h)
+        ctx.restore()
       } catch { /* ignore */ }
     }
 
@@ -143,7 +153,7 @@ export function ImageWorkbench({ blockId, onClose }: Props) {
         ctx.restore()
       } catch { /* ignore */ }
     }
-  }, [bgUrl, bgColor, layers, PREVIEW_W, PREVIEW_H, loadImg])
+  }, [bgUrl, bgColor, bgScale, bgRotation, bgOpacity, layers, PREVIEW_W, PREVIEW_H, loadImg])
 
   useEffect(() => { drawCanvas() }, [drawCanvas])
 
@@ -212,6 +222,10 @@ export function ImageWorkbench({ blockId, onClose }: Props) {
       imageUrl: dataUrl,
       foregroundLayers: layers.filter(l => l.url),
       workbenchBgColor: bgColor,
+      workbenchBgUrl: bgUrl ?? undefined,
+      workbenchBgScale: bgScale,
+      workbenchBgRotation: bgRotation,
+      workbenchBgOpacity: bgOpacity,
     })
     setRendering(false)
     onClose()
@@ -373,7 +387,7 @@ export function ImageWorkbench({ blockId, onClose }: Props) {
             {/* Background row */}
             <LayerRow
               label="Background"
-              sublabel="fill"
+              sublabel={bgUrl ? 'image set' : `color ${bgColor}`}
               thumb={bgUrl ?? undefined}
               isActive={active === null}
               onClick={() => switchActive(null)}
@@ -421,7 +435,9 @@ export function ImageWorkbench({ blockId, onClose }: Props) {
                 {activeLabel}
               </span>
               <span style={{ fontSize: 11, color: '#aaa' }}>
-                {isBackground ? 'Cover fill — no transform' : 'Position, scale & rotate'}
+                {isBackground
+                  ? (bgUrl ? 'Scale, rotate & opacity' : 'Color fill only')
+                  : 'Position, scale & rotate'}
               </span>
             </div>
 
@@ -523,6 +539,20 @@ export function ImageWorkbench({ blockId, onClose }: Props) {
                     setPickerOpen(false)
                   }}
                 />
+              </div>
+            )}
+
+            {/* Background image transform sliders — only when bg image is set */}
+            {isBackground && bgUrl && (
+              <div style={{
+                padding: '12px 14px',
+                display: 'flex', flexDirection: 'column', gap: 10,
+                borderTop: '1px solid #eee',
+                backgroundColor: '#fff',
+              }}>
+                <Slider label="Scale"    value={bgScale}    min={10}  max={300} step={1}  unit="%" onChange={setBgScale} />
+                <Slider label="Rotation" value={bgRotation} min={-180} max={180} step={1} unit="°" onChange={setBgRotation} />
+                <Slider label="Opacity"  value={bgOpacity}  min={5}   max={100} step={1}  unit="%" onChange={setBgOpacity} />
               </div>
             )}
 

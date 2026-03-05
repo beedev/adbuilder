@@ -96,7 +96,11 @@ export interface PlacedBlockOverrides {
   richTextJson?: Record<string, unknown>
   // Image Workbench — source layers saved for re-editing
   foregroundLayers?: WorkbenchLayer[]
-  workbenchBgColor?: string   // canvas background color, default #ffffff
+  workbenchBgColor?: string    // canvas background color, default #ffffff
+  workbenchBgUrl?: string      // source background image URL (not the baked composite)
+  workbenchBgScale?: number    // % multiplier on cover-fit scale, default 100
+  workbenchBgRotation?: number // degrees, default 0
+  workbenchBgOpacity?: number  // 0–100, default 100
   // Ring stamp border style (applies when stampShapes[stamp] === 'ring')
   stampRingStyle?: Partial<Record<StampType, 'solid' | 'dashed' | 'dotted' | 'double'>>
   // Layout of image vs price+text within the block
