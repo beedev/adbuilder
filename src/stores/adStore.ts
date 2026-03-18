@@ -12,6 +12,7 @@ interface AdStore {
   templates: Template[]
   isLoading: boolean
   isDirty: boolean
+  dirtyBlockIds: Record<string, true>
   lastSaved: Date | null
   history: Command[]
   historyIndex: number
@@ -53,12 +54,13 @@ export const useAdStore = create<AdStore>((set, get) => ({
   templates: [],
   isLoading: false,
   isDirty: false,
+  dirtyBlockIds: {},
   lastSaved: null,
   history: [],
   historyIndex: -1,
 
   setAd(ad) {
-    set({ ad, isDirty: false })
+    set({ ad, isDirty: false, dirtyBlockIds: {} })
   },
 
   setTemplates(templates) {
@@ -85,7 +87,7 @@ export const useAdStore = create<AdStore>((set, get) => ({
   },
 
   markSaved() {
-    set({ isDirty: false, lastSaved: new Date() })
+    set({ isDirty: false, dirtyBlockIds: {}, lastSaved: new Date() })
   },
 
   placeBlock(pageId, blockDataId, zoneId, x, y, width, height, blockData, zIndex) {
@@ -197,7 +199,8 @@ export const useAdStore = create<AdStore>((set, get) => ({
             )
           }))
         },
-        isDirty: true
+        isDirty: true,
+        dirtyBlockIds: { ...state.dirtyBlockIds, [placedBlockId]: true },
       }
     })
   },
@@ -239,7 +242,8 @@ export const useAdStore = create<AdStore>((set, get) => ({
             }))
           }))
         },
-        isDirty: true
+        isDirty: true,
+        dirtyBlockIds: { ...state.dirtyBlockIds, [placedBlockId]: true },
       }
     })
   },
@@ -262,7 +266,8 @@ export const useAdStore = create<AdStore>((set, get) => ({
             }))
           }))
         },
-        isDirty: true
+        isDirty: true,
+        dirtyBlockIds: { ...state.dirtyBlockIds, [placedBlockId]: true },
       }
     })
   },

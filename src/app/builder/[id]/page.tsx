@@ -135,25 +135,28 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
 
   const handleSave = useCallback(async () => {
     if (!ad || isSaving) return
+    const { dirtyBlockIds } = useAdStore.getState()
+    const dirtyIds = Object.keys(dirtyBlockIds)
+    if (dirtyIds.length === 0) { markSaved(); return }
     setIsSaving(true)
     try {
-      for (const vehicle of ad.vehicles) {
-        for (const page of vehicle.pages) {
-          for (const pb of page.placedBlocks) {
-            await fetch(`/api/ads/${id}/blocks/${pb.id}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                x: pb.x,
-                y: pb.y,
-                width: pb.width,
-                height: pb.height,
-                overrides: pb.overrides,
-              }),
-            }).catch(() => {})
-          }
-        }
-      }
+      const allBlocks = ad.vehicles.flatMap(v => v.pages.flatMap(p => p.placedBlocks))
+      const dirtyBlocks = allBlocks.filter(pb => dirtyBlockIds[pb.id])
+      await Promise.all(
+        dirtyBlocks.map(pb =>
+          fetch(`/api/ads/${id}/blocks/${pb.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              x: pb.x,
+              y: pb.y,
+              width: pb.width,
+              height: pb.height,
+              overrides: pb.overrides,
+            }),
+          }).catch(() => {})
+        )
+      )
       markSaved()
     } finally {
       setIsSaving(false)

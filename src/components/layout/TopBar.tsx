@@ -4,7 +4,7 @@ import { Ad } from '@/types'
 import { useAdStore } from '@/stores/adStore'
 import { useUIStore } from '@/stores/uiStore'
 import { usePriceStore } from '@/stores/priceStore'
-import { Save, Eye, Send, RotateCcw, RotateCw, Store, FileDown } from 'lucide-react'
+import { Save, Eye, Send, RotateCcw, RotateCw, Store, FileDown, FileType } from 'lucide-react'
 
 const REGIONS = ['WEST_COAST', 'MIDWEST', 'EAST_COAST']
 
@@ -19,31 +19,32 @@ export function TopBar({ ad, onSave, onSubmit, isSaving }: Props) {
   const { undo, redo, history, historyIndex, isDirty, lastSaved } = useAdStore()
   const { togglePreview } = useUIStore()
   const { activeRegion, setRegion } = usePriceStore()
-  const [isExporting, setIsExporting] = React.useState(false)
+  const [isExporting, setIsExporting] = React.useState<'pdf' | 'idml' | null>(null)
 
-  async function handleExportPdf() {
+  async function handleExport(format: 'pdf' | 'idml') {
     if (isExporting) return
-    setIsExporting(true)
+    setIsExporting(format)
     try {
-      const res = await fetch(`/api/ads/${ad.id}/export/pdf`, { method: 'POST' })
+      const res = await fetch(`/api/ads/${ad.id}/export/${format}`, { method: 'POST' })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
-        alert(body.error || 'PDF export failed. Please try again.')
+        alert(body.error || `${format.toUpperCase()} export failed. Please try again.`)
         return
       }
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `weekly-ad-${ad.name.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.pdf`
+      const safeName = ad.name.replace(/[^a-z0-9]+/gi, '-').toLowerCase()
+      a.download = `weekly-ad-${safeName}.${format}`
       document.body.appendChild(a)
       a.click()
       a.remove()
       URL.revokeObjectURL(url)
     } catch {
-      alert('PDF export failed. Please try again.')
+      alert(`${format.toUpperCase()} export failed. Please try again.`)
     } finally {
-      setIsExporting(false)
+      setIsExporting(null)
     }
   }
 
@@ -174,8 +175,8 @@ export function TopBar({ ad, onSave, onSubmit, isSaving }: Props) {
 
       {/* Actions */}
       <button
-        onClick={handleExportPdf}
-        disabled={isExporting}
+        onClick={() => handleExport('pdf')}
+        disabled={!!isExporting}
         title="Download as PDF"
         style={{
           padding: '6px 14px',
@@ -187,12 +188,34 @@ export function TopBar({ ad, onSave, onSubmit, isSaving }: Props) {
           display: 'flex',
           alignItems: 'center',
           gap: 6,
-          color: isExporting ? '#bbb' : '#555',
-          opacity: isExporting ? 0.7 : 1,
+          color: isExporting === 'pdf' ? '#bbb' : '#555',
+          opacity: isExporting === 'pdf' ? 0.7 : 1,
         }}
       >
         <FileDown size={15} />
-        {isExporting ? 'Exporting…' : 'Export PDF'}
+        {isExporting === 'pdf' ? 'Exporting\u2026' : 'PDF'}
+      </button>
+
+      <button
+        onClick={() => handleExport('idml')}
+        disabled={!!isExporting}
+        title="Download as InDesign IDML"
+        style={{
+          padding: '6px 14px',
+          backgroundColor: 'transparent',
+          border: '1px solid #ddd',
+          borderRadius: 6,
+          cursor: isExporting ? 'default' : 'pointer',
+          fontSize: 13,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          color: isExporting === 'idml' ? '#bbb' : '#555',
+          opacity: isExporting === 'idml' ? 0.7 : 1,
+        }}
+      >
+        <FileType size={15} />
+        {isExporting === 'idml' ? 'Exporting\u2026' : 'IDML'}
       </button>
 
       <button
